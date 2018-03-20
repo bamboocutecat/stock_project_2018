@@ -1,0 +1,10 @@
+*.h5
+*.json
+my_model.h5
+GitHub.sln
+.vs/slnx.sqlite
+.vs/GitHub/v15/.suo
+.vs/stock_project_2018/v15/.suo
+.ipynb_checkpoints/測試用-checkpoint.ipynb
+測試用.ipynb
+test.py

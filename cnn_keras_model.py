@@ -1,3 +1,4 @@
+# from keras.backend.tensorflow_backend import set_session
 import pandas as pd
 import numpy as np
 import time
@@ -36,7 +37,7 @@ from keras.utils import Sequence
 from keras.utils import multi_gpu_model
 from keras.preprocessing.image import img_to_array
 from numpy import float
-from multi_gpu_model_fixed import multi_gpu_model
+# from multi_gpu_model_fixed import multi_gpu_model
 
 
 
@@ -72,6 +73,7 @@ def generate_train_from_file(x,y,batch_size):
             
             
         Data = np.array(Data).reshape((batch_size,) + (380, 383, 3))
+        print(Data.shape)
         
         yield Data, labels
 
@@ -95,11 +97,16 @@ def generate_val_from_file(x,y,batch_size):
             
             
         Data = np.array(Data).reshape((batch_size,) + (380, 383, 3))
+        print(Data.shape)
 
         yield Data, labels
 
 
 def main():
+
+    # config = tf.ConfigProto()
+    # config.gpu_options.allow_growth = True
+    # set_session(tf.Session(config=config))
 
 
     pic_sum = []
@@ -131,12 +138,33 @@ def main():
     test_addrs = addrs[int(0.8*len(addrs)):]
     test_labels = labels[int(0.8*len(labels)):]
     
+    hdf5_file = h5py.File('shuffleed_data.h5', mode='w')
+    for i,a in enumerate(train_addrs) :
+        train_addrs[i] =  a.encode('utf8')
+    for i,a in enumerate(val_addrs) :
+        val_addrs[i] =  a.encode('utf8')
+    for i,a in enumerate(test_addrs) :
+        test_addrs[i] =  a.encode('utf8')
+
+    hdf5_file.create_dataset("train_img", data = train_addrs)
+    hdf5_file.create_dataset("val_img", data= val_addrs)
+    hdf5_file.create_dataset("test_img", data= test_addrs)
+
+    hdf5_file.create_dataset("train_labels", (len(train_addrs),3), np.int8)
+    hdf5_file["train_labels"][...] = train_labels
+
+    hdf5_file.create_dataset("val_labels", (len(val_addrs),3), np.int8)
+    hdf5_file["val_labels"][...] = val_labels
+
+    hdf5_file.create_dataset("test_labels", (len(test_addrs),3), np.int8)
+    hdf5_file["test_labels"][...] = test_labels
+
     
     
-    with tf.device('/cpu:0'):
-        model = ResNet50(input_shape=(380,383,3),classes=3,pooling='max',include_top=True,weights=None)
+    #with tf.device('/cpu:0'):
+    parallel_model = ResNet50(input_shape=(380,383,3),classes=3,pooling='max',include_top=True,weights=None)
       
-    parallel_model = multi_gpu_model(model, gpus=8)
+    #parallel_model = multi_gpu_model(model, gpus=6)
     parallel_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
   
@@ -153,12 +181,12 @@ def main():
     #model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     # train_history = model.fit(x=x_train, y=y_train, epochs=3, batch_size=100, shuffle=True, callbacks = callbacks_list)
     
-    batch_size = 50
+    batch_size = 10
     #train_generator = train_datagen.flow_from_directory(  '')
     #print multiprocessing.cpu_count()
     
     train_history = parallel_model.fit_generator(generate_train_from_file(train_addrs,train_labels,batch_size), 
-                                        steps_per_epoch=10,epochs=20
+                                        steps_per_epoch=50,epochs=20
                                         ,verbose=1,workers=multiprocessing.cpu_count(), use_multiprocessing=True)
     
     loss, accuracy = parallel_model.evaluate_generator(generate_val_from_file(val_addrs,val_labels,batch_size),
@@ -174,13 +202,14 @@ def main():
         data = imageio.imread(test_addrs[i])
         data = data.reshape(1,380,383,3)
         print(parallel_model.predict(data))
+        print(parallel_model.predict(data).shape)
         
     #plt.show()
 
-    #print(parallel_model.predict(data,batch_size=1,verbose=1))
+    #print(list(parallel_model.predict(data,batch_size=10,verbose=1)))
     
     #accPrint = int(accuracy * 10000)
-    #parallel_model.save('my_model.h5') 
+    parallel_model.save('my_model.h5') 
 
     # ------------ save the template model rather than the gpu_mode ----------------
     # serialize model to JSON
