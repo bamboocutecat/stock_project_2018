@@ -1,5 +1,6 @@
 *.h5
 *.json
+
 my_model.h5
 GitHub.sln
 .vs/slnx.sqlite

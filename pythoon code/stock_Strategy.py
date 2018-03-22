@@ -10,16 +10,20 @@ import h5py
 
 # loadmodel
 model = keras.models.load_model('my_model.h5')
-stock_data = h5py.File('shuffle_data.h5','r')
+stock_data = h5py.File('shuffleed_data.h5')
 print('read OK')
 
-addrs, labels = zip(*stock_data['data'])
 
-for addr in addrs[:10]:
+for addr in stock_data['test_img'][:10]:
     pic = imageio.imread(addr)
     pic = pic.reshape(1,380,383,3)
     print(model.predict(pic,batch_size=1,verbose=1))
-    
+
+
+
+
+
+
 
 #plt.figure()
 #for i in range(1):

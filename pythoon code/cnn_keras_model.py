@@ -181,16 +181,16 @@ def main():
     #model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     # train_history = model.fit(x=x_train, y=y_train, epochs=3, batch_size=100, shuffle=True, callbacks = callbacks_list)
     
-    batch_size = 10
+    batch_size = 5
     #train_generator = train_datagen.flow_from_directory(  '')
     #print multiprocessing.cpu_count()
     
     train_history = parallel_model.fit_generator(generate_train_from_file(train_addrs,train_labels,batch_size), 
-                                        steps_per_epoch=50,epochs=20
+                                        steps_per_epoch=1000,epochs=50
                                         ,verbose=1,workers=multiprocessing.cpu_count(), use_multiprocessing=True)
     
     loss, accuracy = parallel_model.evaluate_generator(generate_val_from_file(val_addrs,val_labels,batch_size),
-                                        steps=100,workers=multiprocessing.cpu_count(), use_multiprocessing=True)
+                                        steps=1000,workers=multiprocessing.cpu_count(), use_multiprocessing=True)
                                         
     #steps=len(val_labels)//batch_size
     print(train_history)
