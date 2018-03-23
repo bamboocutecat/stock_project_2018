@@ -19,12 +19,6 @@ for addr in stock_data['test_img'][:10]:
     pic = pic.reshape(1,380,383,3)
     print(model.predict(pic,batch_size=1,verbose=1))
 
-
-
-
-
-
-
 #plt.figure()
 #for i in range(1):
 # data = imageio.imread(stock_data['test_addrs'][0])
