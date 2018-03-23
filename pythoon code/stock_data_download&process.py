@@ -87,7 +87,7 @@ def stock_data_process(stocknum,years,months):
         
         
         mixed_data.to_hdf(stockid+'.h5','stock_data',mode='w',dropna=True,format='table')
-        print(stockid+'  個股總天數 = ')
-        print(count[countstock])
+        print(stockid+'  個股總天數 = '+count[countstock])
         countstock += 1
+    print(count.sum())
     #########################################################   合併  轉float64 輸出hdf5

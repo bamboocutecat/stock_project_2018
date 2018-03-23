@@ -44,3 +44,39 @@ def stock_recordchange(stocknum,X_window,Y_slicing,K_changedays):      #########
         se_rcd = pd.DataFrame(recordchangedata_np_ar,columns=['plus','minus'])
         se_rcd.to_hdf(stockid+'_table.h5','stock_data_table',format='table',mode='w')
             
+def stock_tablemake(stocknum):
+    ##########################################   將分類套用並存h5   依變化量
+    for stockid in stocknum:
+        df_table = pd.read_hdf(stockid+'_table.h5','stock_data_table',mode='r')
+        table_sumchange = np.zeros((len(df_table),3))
+        
+        for i,value in enumerate(df_table.values)  :
+            if value[0] >50 and value[1]<=50:
+                table_sumchange[i][0]=1
+            if value[0] <=50 and value[1]>50:
+                table_sumchange[i][1]=1
+            if (value[0] <50 and value[1]<50) or (value[0] >50 and value[1]>50):
+                table_sumchange[i][2]=1
+        print(stockid+' shape = '+ table_sumchange.shape)
+        table_sumchange_df = pd.DataFrame(table_sumchange,columns=['plus','minus','unchange'])
+        table_sumchange_df.to_hdf(stockid+'_table_sumchange.h5','stock_data_table',format='table',mode='w')
+    ########################################       求證總數無誤  將所有變化量統合
+    sum_df=pd.DataFrame()
+
+    for stockid in stocknum:
+        df_table = pd.read_hdf(stockid+'_table_sumchange.h5','stock_data_table')
+        sum_df = pd.concat([sum_df,df_table],ignore_index=True)
+             
+    print(sum_df.describe())
+
+def observe_relation(stockid):
+    ######################################         觀察變化量與價格關係
+    df_table = pd.read_hdf(str(stockid) + '_table.h5','stock_data_table')
+    df = pd.read_hdf(str(stockid)+'.h5','stock_data')
+
+    fig = plt.figure()
+
+    plt.plot(df.loc[50:150,'收盤價'],'r')
+    plt.show()
+    plt.plot(df_table[0:50])
+    plt.show()
