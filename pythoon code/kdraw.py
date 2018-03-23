@@ -20,6 +20,7 @@ import threading
 import multiprocessing as mp
 from multiprocessing import Pool
 import random
+import imageio
 
 def computeMACD(x, slow=26, fast=12):
     emaslow = ExpMovingAverage(x, slow)
@@ -53,7 +54,7 @@ def rsiFunc(prices, n=12):
         rsi[i] = 100. - 100./(1.+rs)
     return rsi
 
-def drawpic(stockid,X_window,Y_slicing,K_changedays):
+def drawpic(stockid,X_window=50,Y_slicing=1,K_changedays=50,pic_check=0):
 
     fig = plt.figure(figsize=(24, 24))
     ax = plt.subplot2grid((20,4), (0,0), rowspan=7, colspan=4, facecolor='#07000d')
@@ -66,14 +67,17 @@ def drawpic(stockid,X_window,Y_slicing,K_changedays):
     countpic = 0
 
     for X_pics in range( 0,int((len(df)- X_window)/ Y_slicing + 1  - K_changedays) ):
-                    
-        try:
-            open(stockid + 'pic/'+ str(X_pics) + '_'+stockid+'.jpg','r')
-            countpic +=1
-            print(stockid +' = '+ countpic)
-            continue
-        except FileNotFoundError:
-            pass
+
+        if pic_check == 1:                    
+            try:
+                #open(stockid + 'pic/'+ str(X_pics) + '_'+stockid+'.jpg','r')
+                imageio.imread(stockid + 'pic/'+ str(X_pics) + '_'+stockid+'.jpg',format='jpg')
+                countpic +=1
+                print(stockid +' = '+ countpic)
+                continue
+            except :
+                print(stockid + 'pic/'+ str(X_pics) + '_'+stockid+'.jpg'+'  =  error!!')
+                pass
         
         ax.clear()
         #ax.set_xticks(range(0,50), 10)
