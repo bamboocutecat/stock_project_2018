@@ -8,19 +8,21 @@ import numpy as np
 import h5py
 import codecs
 
-def stock_data_download(stocknum,years,months):
-    for year in range(years,time.localtime().tm_year):
-        for m in range(months,13):
+
+def stock_data_download(stocknum, years, months, rawdatadir):
+    for year in range(years, time.localtime().tm_year):
+        for m in range(months, 13):
             for stockid in stocknum:
-                url =('http://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date='
-                +str(year)+str(m).zfill(2)+'01'+'&stockNo='+stockid)
+                url = ('http://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date='
+                       + str(year)+str(m).zfill(2)+'01'+'&stockNo='+stockid)
 
                 try:
-                    open('D:/專題使用/新股票資料/' +stockid+'_' +str(year) + '_' + str(m).zfill(2) + '.csv','r')
-                except FileNotFoundError:    
+                    open(rawdatadir + stockid+'_' + str(year) +
+                         '_' + str(m).zfill(2) + '.csv', 'r')
+                except FileNotFoundError:
                     try:
-                        f = urllib.request.urlretrieve(url,'D:/專題使用/新股票資料/' 
-                        +stockid+'_' +str(year) + '_' + str(m).zfill(2) + '.csv')
+                        f = urllib.request.urlretrieve(url, rawdatadir
+                                                       + stockid+'_' + str(year) + '_' + str(m).zfill(2) + '.csv')
                         time.sleep(3)
                     except urllib.error.URLError:
                         continue
@@ -28,75 +30,68 @@ def stock_data_download(stocknum,years,months):
                         continue
 
 
-
-
-
-
-def stock_data_process(stocknum,years,months):
+def stock_data_process(stocknum, years, months, rawdatadir, h5datadir):
     count = np.zeros((111))
     countstock = 0
 
     for stockid in stocknum:
         mixed_data = pd.DataFrame()
-        for year in range(years,2018):
-            for m in range(months,13):
+        for year in range(years, 2018):
+            for m in range(months, 13):
                 try:
-                    f = open('D:/program/新股票資料/' +stockid+'_'+ str(year) + '_' + str(m).zfill(2) 
-                    + '.csv','r',encoding='cp950')  
+                    f = open(rawdatadir + stockid+'_' + str(year) + '_' + str(m).zfill(2)
+                             + '.csv', 'r', encoding='cp950')
                 except FileNotFoundError:
-                    print('file not found! = ' +stockid+str(year)+str(m))
+                    print('file not found! = ' + stockid+str(year)+str(m))
                     continue
                 try:
-                    df = pd.read_csv(f,header=1)
+                    df = pd.read_csv(f, header=1)
                 except:
                     print('error reading csv = '+stockid+str(year)+str(m))
                     continue
 
-                df = df.iloc[:,0:7]
+                df = df.iloc[:, 0:7]
                 nan_flag = 0
                 # try:
                 #     for col in df.columns[3:7]:
                 #         df[col] = df[col].astype('float64')#一列一列改變
                 # except:
-                    #nan_flag = 1
+                #nan_flag = 1
                 for i in range(len(df['開盤價'])):
                     try:
-                        df.iloc[i,3:7] = df.iloc[i,3:7].astype('float64')
+                        df.iloc[i, 3:7] = df.iloc[i, 3:7].astype('float64')
                         #print(df.iloc[i,3:7])
-                    except :
+                    except:
                         #print(df.iloc[i,3:7])
                         nan_flag = 1
-                        df.iloc[i,2]= np.nan
+                        df.iloc[i, 2] = np.nan
                         #print(df)
-                            
-                df.dropna(how='any',inplace=True) 
-                
-                if nan_flag==1:
+
+                df.dropna(how='any', inplace=True)
+
+                if nan_flag == 1:
                     #print(df)
                     for col in df.columns[3:7]:
                         df[col] = df[col].astype('float64')
                     #print (df.dtypes)
-                
-                
-                
-                mixed_data = pd.concat([mixed_data,df],ignore_index=True)
-                #print(mixed_data)
-        
-        
-        #print(mixed_data.dtypes)
-        count[countstock]=len(mixed_data)
 
-        for i,value in enumerate(mixed_data.iloc[:,2]):
+                mixed_data = pd.concat([mixed_data, df], ignore_index=True)
+                #print(mixed_data)
+
+        #print(mixed_data.dtypes)
+        count[countstock] = len(mixed_data)
+
+        for i, value in enumerate(mixed_data.iloc[:, 2]):
             try:
-                mixed_data.iloc[i,2] = value.replace(',','')
+                mixed_data.iloc[i, 2] = value.replace(',', '')
             except AttributeError:
                 continue
 
-        mixed_data.iloc[i,2] = float(mixed_data.iloc[i,2])
+        mixed_data.iloc[i, 2] = float(mixed_data.iloc[i, 2])
         mixed_data['成交金額'] = mixed_data['成交金額'].astype('float64')
-        
-        
-        mixed_data.to_hdf(stockid+'.h5','stock_data',mode='w',dropna=True,format='table')
+
+        mixed_data.to_hdf(h5datadir + stockid+'.h5', 'stock_data',
+                          mode='w', dropna=True, format='table')
         print(stockid+'  個股總天數 = '+count[countstock])
         countstock += 1
     print(count.sum())
