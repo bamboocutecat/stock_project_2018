@@ -87,7 +87,7 @@ def drawpic(stockid,X_window=50,Y_slicing=1,K_changedays=50,pic_check=0):
 
         candlestick2_ochl(ax, df_slice['開盤價'], df_slice['收盤價'],
                           df_slice['最高價'], df_slice['最低價'],
-                   width=1, colorup='r', colordown='green',alpha=0.6)
+                           width=1, colorup='r', colordown='green',alpha=0.6)
         ax.plot(range(0,50),sma_10[X_pics:X_pics+50],color='#ffff00',lw=5)
         ax.plot(range(0,50),sma_30[X_pics:X_pics+50],color='#0066ff',lw=5)
         #try:

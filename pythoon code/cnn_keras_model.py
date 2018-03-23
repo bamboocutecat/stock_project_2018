@@ -26,6 +26,7 @@ from numpy.random import randint
 import imageio
 import glob
 from random import shuffle
+import keras
 
 from keras.utils import np_utils
 from keras.models import Sequential
@@ -37,7 +38,7 @@ from keras.utils import Sequence
 from keras.utils import multi_gpu_model
 from keras.preprocessing.image import img_to_array
 from numpy import float
-# from multi_gpu_model_fixed import multi_gpu_model
+from multi_gpu_model_fixed import multi_gpu_model
 
 
 
@@ -73,7 +74,7 @@ def generate_train_from_file(x,y,batch_size):
             
             
         Data = np.array(Data).reshape((batch_size,) + (380, 383, 3))
-        print(Data.shape)
+        #print(Data.shape)
         
         yield Data, labels
 
@@ -97,7 +98,7 @@ def generate_val_from_file(x,y,batch_size):
             
             
         Data = np.array(Data).reshape((batch_size,) + (380, 383, 3))
-        print(Data.shape)
+        #print(Data.shape)
 
         yield Data, labels
 
@@ -161,11 +162,12 @@ def main():
 
     
     
-    #with tf.device('/cpu:0'):
-    parallel_model = ResNet50(input_shape=(380,383,3),classes=3,pooling='max',include_top=True,weights=None)
+    with tf.device('/cpu:0'):
+        model = ResNet50(input_shape=(380,383,3),classes=3,pooling='max',include_top=True,weights=None)
       
-    #parallel_model = multi_gpu_model(model, gpus=6)
-    parallel_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    parallel_model = multi_gpu_model(model, gpus=2)
+    parallel_model.compile(loss='categorical_crossentropy'
+    , optimizer='adam', metrics=['accuracy', keras.metrics.top_k_categorical_accuracy])
 
   
     parallel_model.summary()
@@ -186,7 +188,7 @@ def main():
     #print multiprocessing.cpu_count()
     
     train_history = parallel_model.fit_generator(generate_train_from_file(train_addrs,train_labels,batch_size), 
-                                        steps_per_epoch=1000,epochs=50
+                                        steps_per_epoch=1000,epochs=200
                                         ,verbose=1,workers=multiprocessing.cpu_count(), use_multiprocessing=True)
     
     loss, accuracy = parallel_model.evaluate_generator(generate_val_from_file(val_addrs,val_labels,batch_size),

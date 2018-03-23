@@ -12,14 +12,15 @@ def stock_data_download(stocknum,years,months):
     for year in range(years,time.localtime().tm_year):
         for m in range(months,13):
             for stockid in stocknum:
-                url =('http://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date='+
-                str(year)+str(m).zfill(2)+'01'+'&stockNo='+stockid)
+                url =('http://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date='
+                +str(year)+str(m).zfill(2)+'01'+'&stockNo='+stockid)
 
                 try:
                     open('D:/專題使用/新股票資料/' +stockid+'_' +str(year) + '_' + str(m).zfill(2) + '.csv','r')
                 except FileNotFoundError:    
                     try:
-                        f = urllib.request.urlretrieve(url,'D:/專題使用/新股票資料/' +stockid+'_' +str(year) + '_' + str(m).zfill(2) + '.csv')
+                        f = urllib.request.urlretrieve(url,'D:/專題使用/新股票資料/' 
+                        +stockid+'_' +str(year) + '_' + str(m).zfill(2) + '.csv')
                         time.sleep(3)
                     except urllib.error.URLError:
                         continue
