@@ -53,59 +53,33 @@ def rsiFunc(prices, n=12):
         rsi[i] = 100. - 100./(1.+rs)
     return rsi
 
-def drawpic(stockid):
-    Y_slicing = 1
-    X_window = 50
-    K_changedays = 50
+def drawpic(stockid,X_window,Y_slicing,K_changedays):
+
     fig = plt.figure(figsize=(24, 24))
     ax = plt.subplot2grid((20,4), (0,0), rowspan=7, colspan=4, facecolor='#07000d')
-    #ax = fig.add_axes([0,0.2,1,0.5])
-    #ax2 = fig.add_axes([0,0,1,0.2])
-
-    #minvalue = df['最低價'].min()
-    #maxvalue = df['最高價'].max()
-    #print(minvalue,maxvalue)
 
     df = pd.read_hdf(stockid + '.h5','stock_data')
-##########################################################         轉成交金額 into float64
-    for i,j in enumerate(df.iloc[:,2]):
-        try:
-            df.iloc[i,2] = j.replace(',','')
-        except AttributeError:
-            continue
 
-    df.iloc[i,2] = float(df.iloc[i,2])
-    df['成交金額'] = df['成交金額'].astype('float64')
-##############################################################      轉成交金額 into float64
-
-    sma_10 = talib.SMA(np.array(df['收盤價']), 10)
-    sma_30 = talib.SMA(np.array(df['收盤價']), 30)
+    sma_10 = talib._ta_lib.SMA(np.array(df['收盤價']), 10)
+    sma_30 = talib._ta_lib.SMA(np.array(df['收盤價']), 30)    
     
     countpic = 0
 
     for X_pics in range( 0,int((len(df)- X_window)/ Y_slicing + 1  - K_changedays) ):
-        
-        
-        if X_pics < 301:
-            continue     
-        
+                    
         try:
             open(stockid + 'pic/'+ str(X_pics) + '_'+stockid+'.jpg','r')
             countpic +=1
-            print(countpic)
+            print(stockid +' = '+ countpic)
             continue
         except FileNotFoundError:
             pass
         
-
-        
-
         ax.clear()
-        ax.set_xticks(range(0,50), 10)
+        #ax.set_xticks(range(0,50), 10)
         #ax.set(ylim=[-2, 2])
-
-        df_slice = df.iloc[X_pics:X_pics+50,:]
-        df_slice.index=range(0,50)
+        df_slice = df.iloc[X_pics:X_pics + X_window,:]
+        #df_slice.index=range(0,50)
 
         candlestick2_ochl(ax, df_slice['開盤價'], df_slice['收盤價'],
                           df_slice['最高價'], df_slice['最低價'],
@@ -126,14 +100,16 @@ def drawpic(stockid):
 
         ax2 = plt.subplot2grid((20,4), (7,0), rowspan=2, colspan=4, facecolor='#07000d')
         fillcolor = '#c58fff'
-        nslow = 26
-        nfast = 12
+
+        #nslow = 26
+        #nfast = 12
         nema = 9
         emaslow, emafast, macd = computeMACD(df['收盤價'])
         ema9 = ExpMovingAverage(macd, nema)
         ax2.plot(df_slice['日期'], macd[X_pics:X_pics+50], color='#4ee6fd', lw=5)
         ax2.plot(df_slice['日期'], ema9[X_pics:X_pics+50], color='#ffc78f', lw=5)
-        ax2.fill_between(df_slice['日期'], (macd-ema9)[X_pics:X_pics+50], 0, alpha=0.5, facecolor=fillcolor, edgecolor=fillcolor)
+        ax2.fill_between(df_slice['日期'], (macd-ema9)[X_pics:X_pics+50]
+        , 0, alpha=0.5, facecolor=fillcolor, edgecolor=fillcolor)
 
 
         posCol = '#ffff00'
@@ -153,8 +129,6 @@ def drawpic(stockid):
         ax3.axhline(70, color=negCol)
         ax3.axhline(30, color=posCol)
 
-
-
         ax3.fill_between(df_slice['日期'], rsi[X_pics:X_pics+50], 70,
                          where=(rsi[X_pics:X_pics+50]>=70), facecolor=negCol, edgecolor=negCol, alpha=0.5)
         ax3.fill_between(df_slice['日期'], rsi[X_pics:X_pics+50], 30,
@@ -162,14 +136,11 @@ def drawpic(stockid):
 
         ax3.set_yticks([30,70])
 
-
         ######################################################   Momentum
         ax4 = plt.subplot2grid((20,4), (11,0),    rowspan=2, colspan=4, facecolor='#07000d')
-        mom = talib.MOM(np.array(df['收盤價']), 10)
+        mom = talib._ta_lib.MOM(np.array(df['收盤價']), 10)
         #ax4.axhline(0, color='#ffffff')
         ax4.plot(df_slice['日期'],mom[X_pics:X_pics+50],'#668cff',linewidth=5)
-
-
 
         ###################################################    價格關係   一年參考關係
         ax5 = plt.subplot2grid((20,4),(13,0), rowspan=4, colspan=4, facecolor='#07000d')
@@ -179,34 +150,18 @@ def drawpic(stockid):
         else :
             ax5.set(ylim=[  df.iloc[X_pics-300:X_pics,6].quantile(0.1),df.iloc[X_pics-300:X_pics,6].quantile(0.9)  ])
 
-
-
-
         ax5.fill_between(range(0,50),df_slice['收盤價'], 0, alpha=0.5, facecolor='#ccffff', edgecolor='#ccffff')
         ax5.plot(range(0,50),df_slice['收盤價'],'#ffffff',linewidth=5)
 
-
-
-
         #################################################################### 成交量   一年參考關係
         ax6 = plt.subplot2grid((20,4),(17,0), rowspan=4, colspan=4, facecolor='#07000d') 
-
-
-
-
-        ###Edit this to 3, so it's a bit larger 
 
         if X_pics < 301:
             ax6.set(ylim=[  df.iloc[1:301,2].quantile(0.1),df.iloc[1:301,2].quantile(0.9)  ] )
         else :
             ax6.set(ylim=[  df.iloc[X_pics-300:X_pics,2].quantile(0.1),df.iloc[X_pics-300:X_pics,2].quantile(0.9)  ])
 
-
-
-
         ax6.bar(range(0,50), df_slice['成交金額'], facecolor='#ff9933') 
-
-        plt.subplots_adjust(hspace=0)
 
         ax2.xaxis.set_major_formatter(plt.NullFormatter())
         ax2.yaxis.set_major_formatter(plt.NullFormatter())
@@ -224,4 +179,4 @@ def drawpic(stockid):
 
         plt.savefig(stockid + 'pic/'+ str(X_pics) + '_'+stockid+'.jpg',dpi=20,bbox_inches='tight',mode='w')
         countpic+=1
-        print(countpic)
+        print(stockid +' = '+ countpic)

@@ -84,6 +84,15 @@ def stock_data_process(stocknum,years,months):
         
         #print(mixed_data.dtypes)
         count[countstock]=len(mixed_data)
+
+        for i,value in enumerate(mixed_data.iloc[:,2]):
+            try:
+                mixed_data.iloc[i,2] = value.replace(',','')
+            except AttributeError:
+                continue
+
+        mixed_data.iloc[i,2] = float(mixed_data.iloc[i,2])
+        mixed_data['成交金額'] = mixed_data['成交金額'].astype('float64')
         
         
         mixed_data.to_hdf(stockid+'.h5','stock_data',mode='w',dropna=True,format='table')
