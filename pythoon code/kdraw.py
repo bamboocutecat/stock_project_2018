@@ -21,6 +21,8 @@ import multiprocessing as mp
 from multiprocessing import Pool
 import random
 import imageio
+import PIL
+import glob2
 
 
 def computeMACD(x, slow=26, fast=12):
@@ -92,24 +94,24 @@ def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1):
         #ax.set_xticks(range(0,50), 10)
         #ax.set(ylim=[-2, 2])
         df_slice = df.iloc[X_pics:X_pics + X_window, :]
-        #df_slice.index=range(0,50)
+        # df_slice.index=range(0,50)
 
         candlestick2_ochl(ax, df_slice['開盤價'], df_slice['收盤價'],
                           df_slice['最高價'], df_slice['最低價'],
                           width=1, colorup='r', colordown='green', alpha=0.6)
         ax.plot(range(0, 50), sma_10[X_pics:X_pics+50], color='#ffff00', lw=5)
         ax.plot(range(0, 50), sma_30[X_pics:X_pics+50], color='#0066ff', lw=5)
-        #try:
+        # try:
         #   candlestick2_ochl(ax, df_diff_sliced['開盤價'], df_diff_sliced['收盤價'],
         #                df_diff_sliced['最高價'], df_diff_sliced['最低價'],
         #               width=0.75, colorup='r', colordown='green',alpha=0.6)
-        #except:
+        # except:
         #   print(df_diff_sliced.dtypes)
 
         ax.xaxis.set_major_formatter(plt.NullFormatter())
         ax.yaxis.set_major_formatter(plt.NullFormatter())
 
-        ##########################################################       MACD
+        # MACD
 
         ax2 = plt.subplot2grid((20, 4), (7, 0), rowspan=2,
                                colspan=4, facecolor='#07000d')
@@ -130,7 +132,7 @@ def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1):
         ax2.axhline(0.5, color=negCol)
         ax2.axhline(-0.5, color=posCol)
 
-        ####################################################        RSI
+        # RSI
 
         ax3 = plt.subplot2grid((20, 4), (9, 0),  rowspan=2,
                                colspan=4, facecolor='#07000d')
@@ -150,14 +152,14 @@ def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1):
 
         ax3.set_yticks([30, 70])
 
-        ######################################################   Momentum
+        # Momentum
         ax4 = plt.subplot2grid(
             (20, 4), (11, 0),    rowspan=2, colspan=4, facecolor='#07000d')
         mom = talib._ta_lib.MOM(np.array(df['收盤價']), 10)
-        #ax4.axhline(0, color='#ffffff')
+        # ax4.axhline(0, color='#ffffff')
         ax4.plot(df_slice['日期'], mom[X_pics:X_pics+50], '#668cff', linewidth=5)
 
-        ###################################################    價格關係   一年參考關係
+        # 價格關係   一年參考關係
         ax5 = plt.subplot2grid((20, 4), (13, 0), rowspan=4,
                                colspan=4, facecolor='#07000d')
 
@@ -172,7 +174,7 @@ def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1):
             0, 50), df_slice['收盤價'], 0, alpha=0.5, facecolor='#ccffff', edgecolor='#ccffff')
         ax5.plot(range(0, 50), df_slice['收盤價'], '#ffffff', linewidth=5)
 
-        #################################################################### 成交量   一年參考關係
+        # 成交量   一年參考關係
         ax6 = plt.subplot2grid((20, 4), (17, 0), rowspan=4,
                                colspan=4, facecolor='#07000d')
 
@@ -196,10 +198,23 @@ def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1):
         ax6.xaxis.set_major_formatter(plt.NullFormatter())
         ax6.yaxis.set_major_formatter(plt.NullFormatter())
 
-        if not os.path.isdir(stockid + 'pic/'):
-            os.mkdir(stockid + 'pic/')
+        if not os.path.isdir('stock_pic/'+stockid + 'pic/'):
+            os.mkdir('stock_pic/'+stockid + 'pic/')
 
-        plt.savefig(stockid + 'pic/' + str(X_pics) + '_'+stockid +
+        plt.savefig('stock_pic/'+stockid + 'pic/' + str(X_pics) + '_'+stockid +
                     '.jpg', dpi=20, bbox_inches='tight', mode='w')
         countpic += 1
+        
+        picdata = PIL.Image.open('stock_pic/'+stockid + 'pic/' + str(X_pics) + '_'+stockid +'.jpg')
+        picdata = picdata.resize((224, 224), Image.ANTIALIAS)
+        picdata.save('stock_pic/'+stockid + 'pic/' + str(X_pics) + '_'+stockid +'.jpg')
         print(stockid + ' = ' + countpic)
+
+def pic_convertsize():
+    piclist = glob2.glob('stock_pic/*/*.jpg')
+    for pic in piclist:
+        picdata = PIL.Image.open(pic)
+        picdata = picdata.resize((224, 224), Image.ANTIALIAS)
+        #picdata = picdata.convert('RGB')
+        picdata.save(pic[:-4]+'.jpg')
+        #print(pic[:-4]+'.jpg')

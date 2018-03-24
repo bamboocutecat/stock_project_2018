@@ -3,6 +3,7 @@
 *.ipynb
 *.ipynb_checkpoints
 *.csv
+*.jpg
 
 my_model.h5
 GitHub.sln

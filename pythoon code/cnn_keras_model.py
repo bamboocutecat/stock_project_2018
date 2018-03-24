@@ -27,7 +27,6 @@ import imageio
 import glob
 from random import shuffle
 import keras
-
 from keras.utils import np_utils
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Activation, BatchNormalization
@@ -38,7 +37,7 @@ from keras.utils import Sequence
 from keras.utils import multi_gpu_model
 from keras.preprocessing.image import img_to_array
 from numpy import float
-#from multi_gpu_model_fixed import multi_gpu_model
+from multi_gpu_model_fixed import multi_gpu_model
 
 
 stocknum = {'0051', '1102', '1216', '1227', '1314', '1319', '1434', '1451', '1476', '1477', '1504', '1536', '1560', '1590',
@@ -51,7 +50,7 @@ stocknum = {'0051', '1102', '1216', '1227', '1314', '1319', '1434', '1451', '147
             '6415', '6452', '6456', '8454', '8464', '9910', '9914', '9917', '9921', '9933', '9938', '9941', '9945'}
 
 
-hdf5_path = "pic_sum_new.h5"
+#hdf5_path = "pic_sum_new.h5"
 
 
 def generate_train_from_file(x, y, batch_size):
@@ -61,7 +60,7 @@ def generate_train_from_file(x, y, batch_size):
 
     while(True):
 
-        #X_output = np.zeros((batch_size,) + (380, 383, 3), dtype=np.float)
+        #X_output = np.zeros((batch_size,) + (224, 224, 3), dtype=np.float)
         Data = []
 
         i = randint(0, loopcount)
@@ -72,8 +71,8 @@ def generate_train_from_file(x, y, batch_size):
             #X_output[i] = pic
             Data.append(img_to_array(pic))
 
-        Data = np.array(Data).reshape((batch_size,) + (380, 383, 3))
-        #print(Data.shape)
+        Data = np.array(Data).reshape((batch_size,) + (224, 224, 3))
+        # print(Data.shape)
 
         yield Data, labels
 
@@ -84,7 +83,7 @@ def generate_val_from_file(x, y, batch_size):
     loopcount = ylen // batch_size
 
     while(True):
-        #X_output = np.zeros((batch_size,) + (380, 383, 3), dtype=np.float)
+        #X_output = np.zeros((batch_size,) + (224, 224, 3), dtype=np.float)
         Data = []
 
         i = randint(0, loopcount)
@@ -95,8 +94,8 @@ def generate_val_from_file(x, y, batch_size):
             #X_output[i] = pic
             Data.append(img_to_array(pic))
 
-        Data = np.array(Data).reshape((batch_size,) + (380, 383, 3))
-        #print(Data.shape)
+        Data = np.array(Data).reshape((batch_size,) + (224, 224, 3))
+        # print(Data.shape)
 
         yield Data, labels
 
@@ -113,41 +112,51 @@ def main():
     for stockid in stocknum:
         df = pd.read_hdf('table/'+stockid +
                          '_table_sumchange.h5', 'stock_data_table')
-        pic_addr = glob.glob('stock_pic/' + stockid + 'pic/'+'*.jpg')
-
-        for item in pic_addr:
+        #pic_addr = glob.glob('stock_pic/' +stockid + 'pic/'+'*.jpg')
+        pic_addrs = []
+        for addr in range(10000):
+            if (os.path.exists('stock_pic/' + stockid + 'pic/'
+                               + str(addr).zfill(4)+'_'+stockid+'.jpg')) == False:
+                break
+            pic_addrs.append('stock_pic/' + stockid + 'pic/' +
+                             str(addr).zfill(4)+'_'+stockid+'.jpg')
+        #pic_addr = pic_addr.sort()
+        # print(pic_addrs)
+        for item in pic_addrs:
             item = item.replace('\\', '/')
-            #print (item)
+            #print(item)
             pic_sum.append(item)
         for table in df.values:
             table_sum.append(table)
-        print(len(pic_sum))
-        print(len(table_sum))
 
+        # print(len(pic_sum))
+        # print(len(table_sum))
+    
+    print(pic_sum[:100])
     c = list(zip(pic_sum, table_sum))
     shuffle(c)
     addrs, labels = zip(*c)
     addrs = list(addrs)
     labels = list(labels)
 
-    train_addrs = addrs[0:int(0.6*len(addrs))]
-    train_labels = labels[0:int(0.6*len(labels))]
-    val_addrs = addrs[int(0.6*len(addrs)):int(0.8*len(addrs))]
-    val_labels = labels[int(0.6*len(addrs)):int(0.8*len(addrs))]
-    test_addrs = addrs[int(0.8*len(addrs)):]
-    test_labels = labels[int(0.8*len(labels)):]
+    train_addrs = addrs[0:int(0.8*len(addrs))]
+    train_labels = labels[0:int(0.8*len(labels))]
+    val_addrs = addrs[int(0.8*len(addrs)):int(1*len(addrs))]
+    val_labels = labels[int(0.8*len(addrs)):int(1*len(addrs))]
+    #test_addrs = addrs[int(0.8*len(addrs)):]
+    #test_labels = labels[int(0.8*len(labels)):]
 
     hdf5_file = h5py.File('shuffleed_data.h5', mode='w')
     for i, a in enumerate(train_addrs):
         train_addrs[i] = a.encode('utf8')
     for i, a in enumerate(val_addrs):
         val_addrs[i] = a.encode('utf8')
-    for i, a in enumerate(test_addrs):
-        test_addrs[i] = a.encode('utf8')
+    # for i, a in enumerate(test_addrs):
+    #     test_addrs[i] = a.encode('utf8')
 
     hdf5_file.create_dataset("train_img", data=train_addrs)
     hdf5_file.create_dataset("val_img", data=val_addrs)
-    hdf5_file.create_dataset("test_img", data=test_addrs)
+    # hdf5_file.create_dataset("test_img", data=test_addrs)
 
     hdf5_file.create_dataset("train_labels", (len(train_addrs), 3), np.int8)
     hdf5_file["train_labels"][...] = train_labels
@@ -155,11 +164,11 @@ def main():
     hdf5_file.create_dataset("val_labels", (len(val_addrs), 3), np.int8)
     hdf5_file["val_labels"][...] = val_labels
 
-    hdf5_file.create_dataset("test_labels", (len(test_addrs), 3), np.int8)
-    hdf5_file["test_labels"][...] = test_labels
+    # hdf5_file.create_dataset("test_labels", (len(test_addrs), 3), np.int8)
+    # hdf5_file["test_labels"][...] = test_labels
 
     with tf.device('/cpu:0'):
-        model = ResNet50(input_shape=(380, 383, 3), classes=3,
+        model = ResNet50(input_shape=(224, 224, 3), classes=3,
                          pooling='max', include_top=True, weights=None)
 
     parallel_model = multi_gpu_model(model, gpus=2)
@@ -169,7 +178,7 @@ def main():
     parallel_model.summary()
     print('\n\n\n\n')
 
-    #filepath="best_acc.h5"
+    # filepath="best_acc.h5"
     #checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
     # early_stop = EarlyStopping(monitor='acc', min_delta=0.0001, patience=5, verbose=1, mode='max')
 
@@ -179,31 +188,31 @@ def main():
     #model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     # train_history = model.fit(x=x_train, y=y_train, epochs=3, batch_size=100, shuffle=True, callbacks = callbacks_list)
 
-    batch_size = 5
+    batch_size = 50
     #train_generator = train_datagen.flow_from_directory(  '')
-    #print multiprocessing.cpu_count()
+    # print multiprocessing.cpu_count()
 
     train_history = parallel_model.fit_generator(generate_train_from_file(train_addrs, train_labels, batch_size),
-                                                 steps_per_epoch=1000, epochs=200, verbose=1, workers=multiprocessing.cpu_count(), use_multiprocessing=True)
+                                                 steps_per_epoch=200, epochs=100, verbose=1, workers=multiprocessing.cpu_count(), use_multiprocessing=True)
 
     loss, accuracy = parallel_model.evaluate_generator(generate_val_from_file(val_addrs, val_labels, batch_size),
                                                        steps=1000, workers=multiprocessing.cpu_count(), use_multiprocessing=True)
 
-    #steps=len(val_labels)//batch_size
+    # steps=len(val_labels)//batch_size
     print(train_history)
     print('\ntest loss: ', loss)
     print('\ntest accuracy: ', accuracy)
 
-    #plt.figure()
-    for i in range(10):
-        data = imageio.imread(test_addrs[i])
-        data = data.reshape(1, 380, 383, 3)
-        print(parallel_model.predict(data))
-        print(parallel_model.predict(data).shape)
+    # plt.figure()
+    # for i in range(10):
+    #     data = imageio.imread(test_addrs[i])
+    #     data = data.reshape(1, 380, 383, 3)
+    #     print(parallel_model.predict(data))
+    #     print(parallel_model.predict(data).shape)
 
-    #plt.show()
+    # plt.show()
 
-    #print(list(parallel_model.predict(data,batch_size=10,verbose=1)))
+    # print(list(parallel_model.predict(data,batch_size=10,verbose=1)))
 
     #accPrint = int(accuracy * 10000)
     parallel_model.save('my_model.h5')
