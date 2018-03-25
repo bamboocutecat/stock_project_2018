@@ -131,7 +131,7 @@ def main():
 
         # print(len(pic_sum))
         # print(len(table_sum))
-    
+
     print(pic_sum[:100])
     c = list(zip(pic_sum, table_sum))
     shuffle(c)
@@ -188,15 +188,15 @@ def main():
     #model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     # train_history = model.fit(x=x_train, y=y_train, epochs=3, batch_size=100, shuffle=True, callbacks = callbacks_list)
 
-    batch_size = 50
+    batch_size = 5
     #train_generator = train_datagen.flow_from_directory(  '')
     # print multiprocessing.cpu_count()
 
     train_history = parallel_model.fit_generator(generate_train_from_file(train_addrs, train_labels, batch_size),
-                                                 steps_per_epoch=200, epochs=100, verbose=1, workers=multiprocessing.cpu_count(), use_multiprocessing=True)
+                                                 steps_per_epoch=5000, epochs=100, verbose=1, workers=multiprocessing.cpu_count(), use_multiprocessing=True)
 
     loss, accuracy = parallel_model.evaluate_generator(generate_val_from_file(val_addrs, val_labels, batch_size),
-                                                       steps=1000, workers=multiprocessing.cpu_count(), use_multiprocessing=True)
+                                                       steps=100, workers=multiprocessing.cpu_count(), use_multiprocessing=True)
 
     # steps=len(val_labels)//batch_size
     print(train_history)

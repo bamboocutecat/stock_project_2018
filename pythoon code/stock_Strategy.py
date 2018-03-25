@@ -76,15 +76,13 @@ if __name__ == '__main__':
 # use old data as inputdata first!!~
 # see how much money can i earn in old data
 
-# df_0051 = pd.read_hdf(h5data_path+'0051.h5','stock_data',mode='r') 
+# df_0051 = pd.read_hdf(h5data_path+'0051.h5','stock_data',mode='r')
 # print(df_0051.describe())
 # print(len(df_0051.iloc[:,6]))
 
-
-
     #1.製造圖片
-        #(1)新增資料
-        #(2)
+    #(1)新增資料
+    #(2)
     #2.輸入圖片到模型pridict  return 機率分布array
     #3.畫出2個直方圖  一個代表正起伏+負起伏  一個代表小變化
     #  一格直方代表後50天的起伏預測 --> 轉負起伏就開始買
