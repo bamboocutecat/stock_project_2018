@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import os
+import math
 import time
 from multiprocessing import Pool
 
@@ -9,7 +10,7 @@ import imageio
 #import multiprocessing
 import keras
 import matplotlib.pyplot as plt
-import numpy
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 
@@ -57,12 +58,15 @@ if not os.path.isdir(h5data_path):
 #交易策略
 stock_data_download_process.stock_data_download(
     stocknum, from_years, from_months, rawdata_path)
+#download csv
 stock_data_download_process.stock_data_process(
     stocknum, from_years, from_months, rawdata_path, h5data_path)
-
+#into hdf5
 stock_data_maketable.stock_recordchange(
     stocknum, X_window, Y_slicing, K_changedays, h5data_path)
+#into _table
 stock_data_maketable.stock_tablemake(stocknum, h5data_path)
+#into_sumchange
 
 #########################   多process 繪圖
 if __name__ == '__main__':
@@ -71,14 +75,35 @@ if __name__ == '__main__':
     pool = Pool(mp.cpu_count())
     res = pool.map(kdraw.drawpic, stocknum_list)
     print(res)
+#into pic
 
 
 # use old data as inputdata first!!~
 # see how much money can i earn in old data
 
-# df_0051 = pd.read_hdf(h5data_path+'0051.h5','stock_data',mode='r')
-# print(df_0051.describe())
-# print(len(df_0051.iloc[:,6]))
+#read(h5)  ->  get len of days
+df = pd.read_hdf(h5data_path+'0051.h5', 'stock_data')
+randday = randint((len(df)-X_window)/1-K_changedays)
+# np.randint() (days-X)/Y
+X_pridict = np.zeros((50, 224, 224, 3), dtype=np.uint8)
+for i in range(50):
+    imageio.imread('stock_pic/0051pic/'+str(i).zfill(4)+'_0051.jpg',
+    format='jpg')
+
+prob_array = model.predict()
+for day in range(50):
+
+    # print(date +:    -:)
+    # print(mystocklist)
+    # 影印前50天的資料  3張圖
+    # print(buy? sell?)
+
+    # sell(mystocklist)
+    # buy(mystocklist)
+
+    # df_0051 = pd.read_hdf(h5data_path+'0051.h5','stock_data',mode='r')
+    # print(df_0051.describe())
+    # print(len(df_0051.iloc[:,6]))
 
     #1.製造圖片
     #(1)新增資料

@@ -4,6 +4,8 @@ import numpy as np
 import time
 import csv
 import tensorflow as tf
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import math
 from math import log, exp
@@ -56,48 +58,56 @@ stocknum = {'0051', '1102', '1216', '1227', '1314', '1319', '1434', '1451', '147
 def generate_train_from_file(x, y, batch_size):
 
     ylen = len(y)
-    loopcount = ylen // batch_size
-
-    while(True):
-
-        #X_output = np.zeros((batch_size,) + (224, 224, 3), dtype=np.float)
-        Data = []
-
-        i = randint(0, loopcount)
-        labels = np.array(y[i * batch_size: (i + 1) * batch_size])
-
-        for i, pic_addr in enumerate(x[i * batch_size: (i + 1) * batch_size]):
-            pic = Image.open(pic_addr)
-            #X_output[i] = pic
-            Data.append(img_to_array(pic))
-
-        Data = np.array(Data).reshape((batch_size,) + (224, 224, 3))
-        # print(Data.shape)
-
-        yield Data, labels
-
-
-def generate_val_from_file(x, y, batch_size):
-
-    ylen = len(y)
-    loopcount = ylen // batch_size
+    #loopcount = ylen // batch_size
 
     while(True):
         #X_output = np.zeros((batch_size,) + (224, 224, 3), dtype=np.float)
         Data = []
 
-        i = randint(0, loopcount)
-        labels = np.array(y[i * batch_size: (i + 1) * batch_size])
+        randpick = randint(0, ylen, size=batch_size)
+        labels = np.zeros((batch_size, 3), dtype=np.uint8)
 
-        for i, pic_addr in enumerate(x[i * batch_size: (i + 1) * batch_size]):
-            pic = Image.open(pic_addr)
+        for i, value in enumerate(randpick):
+            labels[i] = y[value]
+
+            pic_addr = x[value]
+            pic = imageio.imread(pic_addr)
             #X_output[i] = pic
-            Data.append(img_to_array(pic))
+            Data.append(pic)
 
-        Data = np.array(Data).reshape((batch_size,) + (224, 224, 3))
+        Data = np.array(Data, dtype=np.uint8).reshape(
+            (batch_size,) + (224, 224, 3))
         # print(Data.shape)
 
         yield Data, labels
+
+
+def generate_val_from_file(x):
+
+    xlen = len(x)
+    #loopcount = ylen // batch_size
+
+    #while(True):
+
+    #X_output = np.zeros((batch_size,) + (224, 224, 3), dtype=np.float)
+    Data = []
+
+    #i = randint(0, loopcount)
+    #labels = np.array(y)
+
+    for i, pic_addr in enumerate(x):
+            pic = imageio.imread(pic_addr)
+            #X_output[i] = pic
+            Data.append(pic)
+            if i % 100 == 0:
+                print(str(i)+' / '+str(xlen)+'   valdata')
+
+    Data = np.array(Data, dtype=np.uint8).reshape((xlen,) + (224, 224, 3))
+    # print(Data.shape)
+
+    return Data
+
+    #    yield Data, labels
 
 
 def main():
@@ -114,7 +124,7 @@ def main():
                          '_table_sumchange.h5', 'stock_data_table')
         #pic_addr = glob.glob('stock_pic/' +stockid + 'pic/'+'*.jpg')
         pic_addrs = []
-        for addr in range(10000):
+        for addr in range(len(df)):
             if (os.path.exists('stock_pic/' + stockid + 'pic/'
                                + str(addr).zfill(4)+'_'+stockid+'.jpg')) == False:
                 break
@@ -129,8 +139,8 @@ def main():
         for table in df.values:
             table_sum.append(table)
 
-        # print(len(pic_sum))
-        # print(len(table_sum))
+        print(len(pic_sum))
+        print(len(table_sum))
 
     print(pic_sum[:100])
     c = list(zip(pic_sum, table_sum))
@@ -139,41 +149,19 @@ def main():
     addrs = list(addrs)
     labels = list(labels)
 
-    train_addrs = addrs[0:int(0.8*len(addrs))]
-    train_labels = labels[0:int(0.8*len(labels))]
-    val_addrs = addrs[int(0.8*len(addrs)):int(1*len(addrs))]
-    val_labels = labels[int(0.8*len(addrs)):int(1*len(addrs))]
+    train_addrs = addrs[0:int(0.9*len(addrs))]
+    train_labels = labels[0:int(0.9*len(labels))]
+    val_addrs = addrs[int(0.9*len(addrs)):int(1*len(addrs))]
+    val_labels = labels[int(0.9*len(addrs)):int(1*len(addrs))]
     #test_addrs = addrs[int(0.8*len(addrs)):]
     #test_labels = labels[int(0.8*len(labels)):]
-
-    hdf5_file = h5py.File('shuffleed_data.h5', mode='w')
-    for i, a in enumerate(train_addrs):
-        train_addrs[i] = a.encode('utf8')
-    for i, a in enumerate(val_addrs):
-        val_addrs[i] = a.encode('utf8')
-    # for i, a in enumerate(test_addrs):
-    #     test_addrs[i] = a.encode('utf8')
-
-    hdf5_file.create_dataset("train_img", data=train_addrs)
-    hdf5_file.create_dataset("val_img", data=val_addrs)
-    # hdf5_file.create_dataset("test_img", data=test_addrs)
-
-    hdf5_file.create_dataset("train_labels", (len(train_addrs), 3), np.int8)
-    hdf5_file["train_labels"][...] = train_labels
-
-    hdf5_file.create_dataset("val_labels", (len(val_addrs), 3), np.int8)
-    hdf5_file["val_labels"][...] = val_labels
-
-    # hdf5_file.create_dataset("test_labels", (len(test_addrs), 3), np.int8)
-    # hdf5_file["test_labels"][...] = test_labels
 
     with tf.device('/cpu:0'):
         model = ResNet50(input_shape=(224, 224, 3), classes=3,
                          pooling='max', include_top=True, weights=None)
 
-    parallel_model = multi_gpu_model(model, gpus=2)
-    parallel_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[
-                           'accuracy', keras.metrics.top_k_categorical_accuracy])
+    parallel_model = multi_gpu_model(model, gpus=4)
+    parallel_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[ 'accuracy'])
 
     parallel_model.summary()
     print('\n\n\n\n')
@@ -188,21 +176,39 @@ def main():
     #model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     # train_history = model.fit(x=x_train, y=y_train, epochs=3, batch_size=100, shuffle=True, callbacks = callbacks_list)
 
-    batch_size = 5
+    batch_size = 100
     #train_generator = train_datagen.flow_from_directory(  '')
     # print multiprocessing.cpu_count()
+    output_directory = 'model_checkpoint/'
+    model_checkpoint = ModelCheckpoint(os.path.join(
+        output_directory, 'weights.{epoch:02d}-{acc:.2f}.hdf5'))
 
     train_history = parallel_model.fit_generator(generate_train_from_file(train_addrs, train_labels, batch_size),
-                                                 steps_per_epoch=5000, epochs=100, verbose=1, workers=multiprocessing.cpu_count(), use_multiprocessing=True)
+                                                 steps_per_epoch=100, epochs=100,
+                                                 verbose=1, callbacks=[model_checkpoint],
+                                                 workers=multiprocessing.cpu_count(), use_multiprocessing=True)
 
-    loss, accuracy = parallel_model.evaluate_generator(generate_val_from_file(val_addrs, val_labels, batch_size),
-                                                       steps=100, workers=multiprocessing.cpu_count(), use_multiprocessing=True)
+    if not os.path.exists('eval_pic.h5'):
+        eval_pic = generate_val_from_file(val_addrs)
+        eval_pich5 = h5py.File('eval_pic.h5', mode='w')
+        eval_pich5.create_dataset('eval_pic', data=eval_pic)
+    else:
+        eval_pic = h5py.File('eval_pic.h5', mode='r')
+    
+    eval_table=np.array(val_labels)
+    loss, accuracy = parallel_model.evaluate(
+        x=eval_pic['eval_pic'], y=eval_table, verbose=1, batch_size=batch_size)
 
-    # steps=len(val_labels)//batch_size
     print(train_history)
+    plt.figure()
+    plt.plot(train_history.history['acc'])
+    plt.savefig('model_accuracy'+str(round(accuracy,2))+'.pdf', dpi=200, bbox_inches='tight', mode='w')
+    plt.figure()
+    plt.plot(train_history.history['loss'])
+    plt.savefig('model_loss'+str(round(loss,2))+'.pdf', dpi=200, bbox_inches='tight', mode='w')
+
     print('\ntest loss: ', loss)
     print('\ntest accuracy: ', accuracy)
-
     # plt.figure()
     # for i in range(10):
     #     data = imageio.imread(test_addrs[i])
@@ -215,7 +221,7 @@ def main():
     # print(list(parallel_model.predict(data,batch_size=10,verbose=1)))
 
     #accPrint = int(accuracy * 10000)
-    parallel_model.save('my_model.h5')
+    parallel_model.save('my_model_'+str(round(accuracy,2))+'.h5')
 
     # ------------ save the template model rather than the gpu_mode ----------------
     # serialize model to JSON
