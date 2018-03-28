@@ -100,7 +100,7 @@ def generate_val_from_file(x):
             #X_output[i] = pic
             Data.append(pic)
             if i % 100 == 0:
-                print(str(i)+' / '+str(xlen)+'   valdata')
+                print(str(i)+' / '+str(xlen)+'   data done')
 
     Data = np.array(Data, dtype=np.uint8).reshape((xlen,) + (224, 224, 3))
     # print(Data.shape)
@@ -149,19 +149,20 @@ def main():
     addrs = list(addrs)
     labels = list(labels)
 
-    train_addrs = addrs[0:int(0.9*len(addrs))]
-    train_labels = labels[0:int(0.9*len(labels))]
-    val_addrs = addrs[int(0.9*len(addrs)):int(1*len(addrs))]
-    val_labels = labels[int(0.9*len(addrs)):int(1*len(addrs))]
-    #test_addrs = addrs[int(0.8*len(addrs)):]
-    #test_labels = labels[int(0.8*len(labels)):]
+    # train_addrs = addrs[0:int(0.7*len(addrs))]
+    # train_labels = labels[0:int(0.7*len(labels))]
+    # val_addrs = addrs[int(0.7*len(addrs)):int(0.9*len(addrs))]
+    # val_labels = labels[int(0.7*len(addrs)):int(0.9*len(addrs))]
+    # test_addrs = addrs[int(0.9*len(addrs)):]
+    # test_labels = labels[int(0.9*len(labels)):]
 
     with tf.device('/cpu:0'):
         model = ResNet50(input_shape=(224, 224, 3), classes=3,
                          pooling='max', include_top=True, weights=None)
 
     parallel_model = multi_gpu_model(model, gpus=4)
-    parallel_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[ 'accuracy'])
+    parallel_model.compile(loss='categorical_crossentropy',
+                           optimizer='adam', metrics=['accuracy'])
 
     parallel_model.summary()
     print('\n\n\n\n')
@@ -175,37 +176,57 @@ def main():
 
     #model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     # train_history = model.fit(x=x_train, y=y_train, epochs=3, batch_size=100, shuffle=True, callbacks = callbacks_list)
+    if not os.path.exists('sum_pic.h5'):
+        sum_pic = h5py.File('sum_pic.h5', mode='w')
+
+        sum_pic.create_dataset('pic', shape=(
+            len(addrs), 224, 224, 3), dtype=np.uint8)
+
+        for i, addr in enumerate(addrs):
+            pic = imageio.imread(addr)
+            sum_pic['pic'][i] = pic
+            if i % 100 == 0:
+                print(str(i)+' / '+str(len(addrs))+'  pic done')
+
+        sum_pic.create_dataset('table', data=labels, dtype=np.uint8)
+
+    else:
+        sum_pic = h5py.File('sum_pic.h5', mode='r')
 
     batch_size = 100
     #train_generator = train_datagen.flow_from_directory(  '')
     # print multiprocessing.cpu_count()
-    output_directory = 'model_checkpoint/'
-    model_checkpoint = ModelCheckpoint(os.path.join(
-        output_directory, 'weights.{epoch:02d}-{acc:.2f}.hdf5'))
+    #output_directory = 'model_checkpoint/'
 
-    train_history = parallel_model.fit_generator(generate_train_from_file(train_addrs, train_labels, batch_size),
-                                                 steps_per_epoch=100, epochs=100,
-                                                 verbose=1, callbacks=[model_checkpoint],
-                                                 workers=multiprocessing.cpu_count(), use_multiprocessing=True)
+    model_checkpoint = ModelCheckpoint("best_acc.h5", monitor='val_acc',
+                                       verbose=1, save_best_only=True, mode='max')
 
-    if not os.path.exists('eval_pic.h5'):
-        eval_pic = generate_val_from_file(val_addrs)
-        eval_pich5 = h5py.File('eval_pic.h5', mode='w')
-        eval_pich5.create_dataset('eval_pic', data=eval_pic)
-    else:
-        eval_pic = h5py.File('eval_pic.h5', mode='r')
-    
-    eval_table=np.array(val_labels)
+    train_history = parallel_model.fit(x=sum_pic['pic'][0:int(len(sum_pic['table'])*0.9)],
+                                       y=sum_pic['table'][0:int(
+                                           len(sum_pic['table'])*0.9)],
+                                       steps_per_epoch=None,
+                                       #steps_per_epoch=50000,
+                                       epochs=10,
+                                       batch_size=batch_size,
+                                       verbose=1, callbacks=[model_checkpoint],
+                                       validation_split=0.2, shuffle=True)
+
     loss, accuracy = parallel_model.evaluate(
-        x=eval_pic['eval_pic'], y=eval_table, verbose=1, batch_size=batch_size)
+        x=sum_pic['pic'][int(len(sum_pic['table'])*0.9)
+                             :int(len(sum_pic['table'])*1.0)],
+        y=sum_pic['table'][int(len(sum_pic['table'])*0.9)
+                               :int(len(sum_pic['table'])*1.0)],
+        verbose=1, batch_size=batch_size)
 
     print(train_history)
     plt.figure()
     plt.plot(train_history.history['acc'])
-    plt.savefig('model_accuracy'+str(round(accuracy,2))+'.pdf', dpi=200, bbox_inches='tight', mode='w')
+    plt.savefig('model_accuracy'+str(round(accuracy, 2)) +
+                '.pdf', dpi=200, bbox_inches='tight', mode='w')
     plt.figure()
     plt.plot(train_history.history['loss'])
-    plt.savefig('model_loss'+str(round(loss,2))+'.pdf', dpi=200, bbox_inches='tight', mode='w')
+    plt.savefig('model_loss'+str(round(loss, 2))+'.pdf',
+                dpi=200, bbox_inches='tight', mode='w')
 
     print('\ntest loss: ', loss)
     print('\ntest accuracy: ', accuracy)
@@ -221,7 +242,7 @@ def main():
     # print(list(parallel_model.predict(data,batch_size=10,verbose=1)))
 
     #accPrint = int(accuracy * 10000)
-    parallel_model.save('my_model_'+str(round(accuracy,2))+'.h5')
+    parallel_model.save('my_model_'+str(round(accuracy, 2))+'.h5')
 
     # ------------ save the template model rather than the gpu_mode ----------------
     # serialize model to JSON

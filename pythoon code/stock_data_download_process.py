@@ -21,8 +21,8 @@ def stock_data_download(stocknum, years, months, rawdatadir):
                          '_' + str(m).zfill(2) + '.csv', 'r')
                 except FileNotFoundError:
                     try:
-                        f = urllib.request.urlretrieve(url, rawdatadir
-                                                       + stockid+'_' + str(year) + '_' + str(m).zfill(2) + '.csv')
+                        urllib.request.urlretrieve(url, rawdatadir
+                                                   + stockid+'_' + str(year) + '_' + str(m).zfill(2) + '.csv')
                         time.sleep(3)
                     except urllib.error.URLError:
                         continue
