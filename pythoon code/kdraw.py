@@ -62,13 +62,14 @@ def rsiFunc(prices, n=12):
     return rsi
 
 
-def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1):
+def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1,
+            h5data_path='h5 data/', pic_path='stock_pic/'):
 
     fig = plt.figure(figsize=(24, 24))
     ax = plt.subplot2grid((20, 4), (0, 0), rowspan=7,
                           colspan=4, facecolor='#07000d')
 
-    df = pd.read_hdf(stockid + '.h5', 'stock_data')
+    df = pd.read_hdf(h5data_path + stockid + 'new.h5', 'stock_data')
 
     sma_10 = talib._ta_lib.SMA(np.array(df['收盤價']), 10)
     sma_30 = talib._ta_lib.SMA(np.array(df['收盤價']), 30)
@@ -80,21 +81,21 @@ def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1):
         if pic_check == 1:
             try:
                 #open(stockid + 'pic/'+ str(X_pics) + '_'+stockid+'.jpg','r')
-                imageio.imread(stockid + 'pic/' + str(X_pics) +
+                imageio.imread(pic_path + stockid + 'pic/' + str(X_pics).zfill(4) +
                                '_'+stockid+'.jpg', format='jpg')
                 countpic += 1
-                print(stockid + ' = ' + countpic)
+                #print(stockid + ' = ' + str(countpic))
                 continue
             except:
-                print(stockid + 'pic/' + str(X_pics) +
-                      '_'+stockid+'.jpg'+'  =  error!!')
+                print(stockid + 'pic/' + str(X_pics).zfill(4) +
+                      '_'+stockid+'.jpg'+'  =  download')
                 pass
 
         ax.clear()
-        #ax.set_xticks(range(0,50), 10)
+        ax.set_xticks(range(0,50), 10)
         #ax.set(ylim=[-2, 2])
         df_slice = df.iloc[X_pics:X_pics + X_window, :]
-        # df_slice.index=range(0,50)
+        df_slice.index=range(0,50)
 
         candlestick2_ochl(ax, df_slice['開盤價'], df_slice['收盤價'],
                           df_slice['最高價'], df_slice['最低價'],
@@ -187,6 +188,8 @@ def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1):
 
         ax6.bar(range(0, 50), df_slice['成交金額'], facecolor='#ff9933')
 
+        plt.subplots_adjust(hspace=0)
+
         ax2.xaxis.set_major_formatter(plt.NullFormatter())
         ax2.yaxis.set_major_formatter(plt.NullFormatter())
         ax3.xaxis.set_major_formatter(plt.NullFormatter())
@@ -198,17 +201,20 @@ def drawpic(stockid, X_window=50, Y_slicing=1, K_changedays=50, pic_check=1):
         ax6.xaxis.set_major_formatter(plt.NullFormatter())
         ax6.yaxis.set_major_formatter(plt.NullFormatter())
 
-        if not os.path.isdir('stock_pic/'+stockid + 'pic/'):
-            os.mkdir('stock_pic/'+stockid + 'pic/')
+        if not os.path.isdir(pic_path + stockid + 'pic/'):
+            os.mkdir(pic_path + stockid + 'pic/')
 
-        plt.savefig('stock_pic/'+stockid + 'pic/' + str(X_pics) + '_'+stockid +
+        plt.savefig(pic_path + stockid + 'pic/' + str(X_pics).zfill(4) + '_'+stockid +
                     '.jpg', dpi=20, bbox_inches='tight', mode='w')
         countpic += 1
-        
-        picdata = PIL.Image.open('stock_pic/'+stockid + 'pic/' + str(X_pics) + '_'+stockid +'.jpg')
+
+        picdata = PIL.Image.open(
+            pic_path + stockid + 'pic/' + str(X_pics).zfill(4) + '_' + stockid + '.jpg')
         picdata = picdata.resize((224, 224), Image.ANTIALIAS)
-        picdata.save('stock_pic/'+stockid + 'pic/' + str(X_pics) + '_'+stockid +'.jpg')
-        print(stockid + ' = ' + countpic)
+        picdata.save(pic_path + stockid + 'pic/' +
+                     str(X_pics).zfill(4) + '_' + stockid + '.jpg')
+        print(stockid + ' = ' + str(countpic))
+
 
 def pic_convertsize():
     piclist = glob2.glob('stock_pic/*/*.jpg')

@@ -12,3 +12,5 @@ GitHub.sln
 .vs/stock_project_2018/v15/.suo
 test.py
 
+*.pyc
+*.zip

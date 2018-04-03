@@ -23,10 +23,9 @@ import os
 def stock_recordchange(stocknum, X_window, Y_slicing, K_changedays, h5datapath):  # 將變化量新建h5
 
     for stockid in stocknum:
-        df = pd.read_hdf(h5datapath + stockid+'.h5', 'stock_data')
+        df = pd.read_hdf(h5datapath + stockid+'new.h5', 'stock_data')
         # 建立儲存變化量矩陣
-        recordchangedata_np_ar = np.zeros(
-            int((len(df) - X_window) / Y_slicing + 1 - K_changedays), 2)
+        recordchangedata_np_ar = np.zeros(shape=(int((len(df) - X_window) / Y_slicing + 1 - K_changedays), 2))
 
         for Y in range(int((len(df) - X_window) / Y_slicing + 1 - K_changedays)):
             sumchange_plus = 0
@@ -63,7 +62,7 @@ def stock_tablemake(stocknum, h5datapath):
                 table_sumchange[i][1] = 1
             if (value[0] < 50 and value[1] < 50) or (value[0] > 50 and value[1] > 50):
                 table_sumchange[i][2] = 1
-        print(stockid+' shape = ' + table_sumchange.shape)
+        print(stockid+' shape = ' + str(table_sumchange.shape))
         table_sumchange_df = pd.DataFrame(table_sumchange, columns=[
                                           'plus', 'minus', 'unchange'])
         table_sumchange_df.to_hdf(
