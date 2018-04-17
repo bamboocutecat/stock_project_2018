@@ -1,4 +1,6 @@
-
+from PyQt5 import QtCore  #import QUrl, QObject, pyqtSlot
+from PyQt5 import QtGui  #import QGuiApplication
+from PyQt5 import QtQuick  #import QQuickView
 import urllib.request
 import time
 import csv
@@ -27,13 +29,13 @@ def stock_data_download(stocknum, years, rawdatadir):
                     if m == time.localtime().tm_mon and year == time.localtime().tm_year:
                         urllib.request.urlretrieve(url, rawdatadir
                                                    + stockid+'_' + str(year) + '_' + str(m).zfill(2) + '.csv')
-                        time.sleep(3)  # 重新下載當月資料
+                        time.sleep(2)  # 重新下載當月資料
 
                 except FileNotFoundError:  # 沒有資料，就下載
                     try:
                         urllib.request.urlretrieve(url, rawdatadir
                                                    + stockid+'_' + str(year) + '_' + str(m).zfill(2) + '.csv')
-                        time.sleep(3)
+                        time.sleep(2)
                     except urllib.error.URLError:
                         print('urllib.error.URLError')
                         continue

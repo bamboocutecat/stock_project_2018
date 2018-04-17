@@ -1,29 +1,30 @@
-#coding:utf-8
+# coding:utf-8
 import multiprocessing as mp
 import os
 import math
 import time
 from multiprocessing import Pool
-
+import glob
 import h5py
 import imageio
-#import talib
-#import multiprocessing
+import talib
+import multiprocessing
 import keras
 
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.random import randint
 import pandas as pd
 import tensorflow as tf
 
 import kdraw
-import stock_data_download_process
-import stock_data_maketable
+# import stock_data_download_process
+# import stock_data_maketable
 
 # loadmodel
-model = keras.models.load_model('my_model_0.81.h5')
+model = keras.models.load_model('my_model_0.81.h5', custom_objects={"tf": tf})
 print('read model OK')
 
 stocknum = {
@@ -72,9 +73,24 @@ if if_retrain == 1:
     pd.DataFrame(trained_data_countnp).to_hdf(
         'train_data_count.h5', 'train_data_count', mode='w')
 
+
+def check_pic_h5data(stocknum, h5data_path, pic_path):
+    for stockid in stocknum:
+        df = pd.read_hdf(h5data_path + stockid + 'new.h5', 'stock_data')
+        #     print(len(df)-50+1-50)
+
+        piclist = glob.glob(pic_path + stockid + 'pic/*.jpg')
+        #     print(len(piclist))
+        if (len(df) - 50 + 1) != len(piclist):
+            print('error')
+        print('%d  =  %d' % ((len(df) - 50 + 1), len(piclist)))
+
+
+check_pic_h5data(stocknum, h5data_path, pic_path)
+
 # ######stock strategy
 
-#stock_data_download_process.stock_data_download(
+# stock_data_download_process.stock_data_download(
 #    stocknum, from_years, rawdata_path)
 # #download csv
 
@@ -90,73 +106,107 @@ if if_retrain == 1:
 # #into_sumchange
 
 # #########################   multprocess draw
+
+# # kdraw.drawpic('0051')
+
 # if __name__ == '__main__':
-#     #     mp.set_start_method('spawn')
+#     # mp.set_start_method('spawn')
 #     stocknum_list = list(stocknum)
 #     pool = Pool(mp.cpu_count())
 #     res = pool.map(kdraw.drawpic, stocknum_list)
 #     print(res)
+# # into pic
 
-# into pic
-# for stockid in stocknum:
+# def show_predict(stockid,)
 
-#     df = pd.read_hdf(h5data_path + stockid+'new.h5', 'stock_data')
-# #     print(len(df)-50+1-50)
-#     import glob2
-#     piclist=glob2.glob(pic_path+stockid+'pic/*.jpg')
-# #     print(len(piclist))
-#     if (len(df)-50+1-50)!=len(piclist):
-#         print('error')
+# def control():
+# df = pd.read_hdf(h5data_path + '0051new.h5', 'stock_data')
+# train_datacountdf = pd.read_hdf('train_data_count.h5', 'train_data_count')
+# df_table = pd.read_hdf(h5data_path + '0051_table_sumchange.h5',
+#                     'stock_data_table')
 
-# use old data as inputdata first!!~
-# see how much money can i earn in old data
+# def buy
 
-#read(h5)  ->  get len of days
-# money = 1000
+# def sell
+
+# def creat_user_data?
+
+#選一天
+#   排除訓練天數
+
+money = 100
+mystocklist = []
 
 df = pd.read_hdf(h5data_path + '0051new.h5', 'stock_data')
 train_datacountdf = pd.read_hdf('train_data_count.h5', 'train_data_count')
+df_table = pd.read_hdf(h5data_path + '0051_table_sumchange.h5',
+                       'stock_data_table')
 
 for i, stock in enumerate(train_datacountdf[0]):
     if stock == '0051':
         traindaycount = int(train_datacountdf[1][i])
 
-randday = np.random.randint((traindaycount - X_window + 1) / 1 - K_changedays,
-                            (len(df) - X_window + 1) / 1 - K_changedays)
+# randday = randint(traindaycount, len(df))
 
-print('today is  =  ' + df[0][randday + 50 - 1])
+print('untrain pic is from  =  ' + str(df.iloc[traindaycount - 1, 0]) + ' ~ ' +
+      str(df.iloc[len(df) - 1, 0]))
+print('pic num from  =  ' + str(traindaycount - 50 + 1) + ' ~ ' +
+      str(len(df) - 50 + 1))
 
-# # np.randint() (days-X)/Y
-X_list = []
+today = input('choose a pic num as your day : ')
 
-for i in range(51):
-    pic = imageio.imread(
-        pic_path + '0051pic/' + str(randday - 50 + i).zfill(4) + '_0051.jpg',
+print('today is : ' + str(df.iloc[today + 50 - 1 - 1, 0]))
+
+while True:
+
+    ##### 把當天圖片show出來
+    today_pic = imageio.imread(
+        pic_path + '0051pic/' + str(today - 1).zfill(4) + '_0051.jpg',
         format='jpg')
-    #print(str(randday-50+i)+'  day')
-    X_list.append(pic)
+    plt.imsave('today.jpg',today_pic)
 
-print('predict pic from = ' + df[0][randday - 50] + ' ~ ' + df[0][randday])
+    ##### 進入predict
+    X_list = []
 
-X_pridict = np.array(X_list).reshape(len(X_list), 224, 224, 3)
-prob_array = model.predict(x=X_pridict, batch_size=1, verbose=0)
+    for i in range(50):
+        pic = imageio.imread(
+            pic_path + '0051pic/' + str(today - 1 - 49 + i).zfill(4) +
+            '_0051.jpg',
+            format='jpg')
+        X_list.append(pic)
 
-# for row in prob_array:
-#     print(row)
+    X_pridict = np.array(X_list).reshape(len(X_list), 224, 224, 3)
+    prob_array = model.predict(x=X_pridict, batch_size=1, verbose=0)
 
-print(prob_array.shape)
-# # print(prob_array[:,0])
+    # loss, acc = model.evaluate(
+    #     x=X_pridict, y=df_table[today-1], verbose=1)
 
-plt.figure
-plt.plot(prob_array[:, 0], label='plus')
-plt.plot(prob_array[:, 1], label='minus')
-plt.plot(prob_array[:, 2], label='unchange')
-plt.legend(loc='best')
-plt.savefig('prob_pic.pdf', mode='w')
+    # print('loss = ' + str(loss) + '  acc = ' + str(acc))
 
-plt.figure
-plt.plot(df[6][randday:randday + 50])
-plt.savefig('furture.pdf')
+    print(prob_array.shape)
+
+    plt.figure()
+    plt.plot(prob_array[:, 0], label='plus')
+    plt.plot(prob_array[:, 1], label='minus')
+    plt.plot(prob_array[:, 2], label='unchange')
+    plt.legend(loc='best')
+    plt.savefig('prob_pic.pdf', mode='w')
+
+    input_order = input('buy or sell : \n')
+    if input_order == 'buy':
+        money -= df.iloc[today + 50 - 1 - 1, 6]
+        mystocklist.append(df.iloc[today + 50 - 1 - 1, 6])
+
+    if input_order == 'sell':
+        print(mystocklist)
+        sellnum = input('sell num : \n')
+        money += df.iloc[today + 50 - 1 - 1, 6]
+        mystocklist.pop(int(sellnum))
+        print(mystocklist)
+
+    today += 1
+    print('my money have : ' + str(money))
+    print('today is : ' + str(df.iloc[today + 50 - 1 - 1, 0]))
 
 # decision = input('make a decision!!~ buy or sell')
 # if decision == 'buy':
@@ -166,7 +216,7 @@ plt.savefig('furture.pdf')
 # else:
 #     pass
 
-#for day in range(50):
+# for day in range(50):
 
 # print(date +:    -:)
 # print(mystocklist)
@@ -180,9 +230,9 @@ plt.savefig('furture.pdf')
 # print(df_0051.describe())
 # print(len(df_0051.iloc[:,6]))
 
-#1.製造圖片
-#(1)新增資料
-#(2)
-#2.輸入圖片到模型pridict  return 機率分布array
-#3.畫出2個直方圖  一個代表正起伏+負起伏  一個代表小變化
+# 1.製造圖片
+# (1)新增資料
+# (2)
+# 2.輸入圖片到模型pridict  return 機率分布array
+# 3.畫出2個直方圖  一個代表正起伏+負起伏  一個代表小變化
 #  一格直方代表後50天的起伏預測 --> 轉負起伏就開始買

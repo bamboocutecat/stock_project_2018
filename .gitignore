@@ -14,3 +14,24 @@ test.py
 
 *.pyc
 *.zip
+build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/.qmake.stash
+build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/Makefile
+build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/Makefile.Debug
+build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/Makefile.Release
+build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/debug/main.o
+build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/debug/qrc_qml.cpp
+build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/debug/qrc_qml.o
+build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/debug/stockgui.exe
+stockgui/qml.qrc
+stockgui/main.cpp
+stockgui/stockgui.pro
+*.idea
+build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/qrc_qml.o
+build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/.qmake.stash
+build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/Makefile
+build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/main.o
+build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/qrc_qml.cpp
+build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/stockgui
+stockgui/main.qmlc
+stockgui/red.clip
+python_code/mpl_finance.py
