@@ -1,6 +1,3 @@
-from PyQt5 import QtCore  #import QUrl, QObject, pyqtSlot
-from PyQt5 import QtGui  #import QGuiApplication
-from PyQt5 import QtQuick  #import QQuickView
 import urllib.request
 import time
 import csv

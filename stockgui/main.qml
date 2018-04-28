@@ -61,6 +61,7 @@ Rectangle {
             x: 546
             y: 364
             text: qsTr("up")
+            font.family: "Tahoma"
             clip: false
             visible: true
             font.pointSize: 18
@@ -72,6 +73,7 @@ Rectangle {
             x: 363
             y: 364
             text: qsTr("down")
+            font.family: "Tahoma"
             highlighted: false
             font.pointSize: 18
         }
@@ -134,7 +136,7 @@ Rectangle {
                 visible: true
                 onClicked: {
                     busyIndicator.running = true
-                    busyIndicator.running = stock.processdata()
+                    stock.processdata()
 
                 }
             }
@@ -151,7 +153,7 @@ Rectangle {
                 visible: true
                 onClicked: {
                     busyIndicator.running = true
-                    busyIndicator.running = stock.tablelize()
+                    stock.tablelize()
                 }
             }
 
@@ -167,7 +169,7 @@ Rectangle {
                 visible: true
                 onClicked: {
                     busyIndicator.running = true
-                    busyIndicator.running = stock.drawpic()
+                    stock.drawpic()
                 }
             }
 
@@ -185,7 +187,7 @@ Rectangle {
                 visible: true
                 onClicked: {
                     busyIndicator.running = true
-                    busyIndicator.running = stock.predict()
+                    stock.predict()
                 }
             }
 
@@ -205,6 +207,7 @@ Rectangle {
                 changetextarea.visible=switch1.checked
                 scrollView.visible=switch1.checked
                 textArea.visible=switch1.checked
+                textArea.text=stock.showstocklist()
             }
 
         }
@@ -250,6 +253,11 @@ Rectangle {
             text: qsTr("Button")
             opacity: 0
             visible: true
+            onClicked: {
+                stock.buystock(numinput.text)
+                textArea.text=stock.showstocklist()
+
+            }
         }
 
         Button {
@@ -261,6 +269,34 @@ Rectangle {
             text: qsTr("Button")
             opacity: 0
             visible: true
+            onClicked: {
+                stock.sellstock(valueinput.text,numinput.text)
+                textArea.text=stock.showstocklist()
+            }
+        }
+
+        TextInput {
+            id: numinput
+            x: 522
+            y: 582
+            width: 111
+            height: 59
+            text: qsTr("Num Input")
+            font.family: "Tahoma"
+            horizontalAlignment: Text.AlignHCenter
+            font.pixelSize: 22
+        }
+
+        TextInput {
+            id: valueinput
+            x: 522
+            y: 666
+            width: 111
+            height: 67
+            text: qsTr("Value Input")
+            horizontalAlignment: Text.AlignHCenter
+            font.family: "Tahoma"
+            font.pixelSize: 22
         }
 
 
@@ -292,6 +328,9 @@ Rectangle {
 
         onBusysig:{
             busyIndicator.running=indicator
+        }
+        onPicsig:{
+            predictpic.source=predict_pic
         }
     }
 

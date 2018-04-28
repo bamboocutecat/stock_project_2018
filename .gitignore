@@ -22,9 +22,6 @@ build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/debug/main.o
 build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/debug/qrc_qml.cpp
 build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/debug/qrc_qml.o
 build-stockgui-Desktop_Qt_5_10_1_MinGW_32bit-Debug/debug/stockgui.exe
-stockgui/qml.qrc
-stockgui/main.cpp
-stockgui/stockgui.pro
 *.idea
 build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/qrc_qml.o
 build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/.qmake.stash

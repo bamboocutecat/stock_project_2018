@@ -15,6 +15,8 @@ import time
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+import glob2
+import imageio
 
 import keras
 import tensorflow as tf
@@ -38,49 +40,70 @@ class MyClass(QtCore.QObject):
         '9938', '9941', '9945'
     }
     today = 0
-    modelpath = 'my_model_0.37.h5'
+    modelpath = 'python_code/my_model_0.37.h5'
     model = None
+    graph = None
     max_stockidpic_num = 0
     stockid = None
     df = None
+    mystocklist = []
+    money = 1000
     Y_slicing = 1
     X_window = 50
     K_changedays = 50
     from_years = 2018
     #from_months = 1
     rawdata_path = 'raw_data/'
-    h5data_path = 'h5_data/'
+    h5data_path = 'python_code/h5_data/'
     table_path = 'table/'
-    pic_path = 'stock_pic/'
+    pic_path = 'python_code/stock_pic/'
+    predict_pic = 'predict_pic/'
     if_retrain = 0
     busysig = QtCore.pyqtSignal(bool, arguments=['indicator'])
+    picsig = QtCore.pyqtSignal(str, arguments=['predict_pic'])
 
     def set_value(self, stockid):
         self.stockid = stockid
-        self.df = pd.read_hdf(self.h5data_path + stockid + '.h5', 'stock_data')
+        self.df = pd.read_hdf(self.h5data_path + stockid + 'new.h5',
+                              'stock_data')
         self.max_stockidpic_num = len(self.df) - 50 + 1
 
-        
+        if self.model == None:
+            print('reading model......\n')
+            self.model = keras.models.load_model(
+                self.modelpath, custom_objects={"tf": tf})
+            print('read model OK')
+        self.graph = tf.get_default_graph()
 
+        self.creatpath()
         if self.if_retrain == 1:
             self.retrain_adjust()
+        # self.check_pic_h5data(self.stocknum, self.h5data_path, self.pic_path)
 
     def creatpath(self):
         if not os.path.isdir(self.rawdata_path):
             os.mkdir(self.rawdata_path)
         if not os.path.isdir(self.h5data_path):
             os.mkdir(self.h5data_path)
+        if not os.path.isdir(self.predict_pic):
+            os.mkdir(self.predict_pic)
+            for stockid in self.stocknum:
+                if not os.path.isdir(
+                        self.predict_pic + stockid + 'predictpic/'):
+                    os.mkdir(self.predict_pic + stockid + 'predictpic/')
         if not os.path.isdir(self.pic_path):
             os.mkdir(self.pic_path)
-            for stockid in stocknum:
+            for stockid in self.stocknum:
                 if not os.path.isdir(self.pic_path + stockid + 'pic/'):
                     os.mkdir(self.pic_path + stockid + 'pic/')
-    def check_pic_h5data(self,stocknum, h5data_path, pic_path):
+
+    def check_pic_h5data(self, stocknum, h5data_path, pic_path):
         for stockid in stocknum:
-            df = pd.read_hdf(self.h5data_path + stockid + 'new.h5', 'stock_data')
+            df = pd.read_hdf(self.h5data_path + stockid + 'new.h5',
+                             'stock_data')
             #     print(len(df)-50+1-50)
 
-            piclist = glob.glob(self.pic_path + stockid + 'pic/*.jpg')
+            piclist = glob2.glob(self.pic_path + stockid + 'pic/*.jpg')
             #     print(len(piclist))
             if (len(df) - 50 + 1) != len(piclist):
                 print('error')
@@ -127,7 +150,7 @@ class MyClass(QtCore.QObject):
         processthread = threading.Thread(
             target=self.busy_thread,
             name='processdata',
-            args=('process'),
+            args=('process', ),
             daemon=False)
         processthread.start()
 
@@ -136,7 +159,7 @@ class MyClass(QtCore.QObject):
         downloadthread = threading.Thread(
             target=self.busy_thread,
             name='downloaddata',
-            args=('download'),
+            args=('download', ),
             daemon=False)
         downloadthread.start()
 
@@ -145,7 +168,7 @@ class MyClass(QtCore.QObject):
         tablelizethread = threading.Thread(
             target=self.busy_thread,
             name='tablelize',
-            args=('tablelize'),
+            args=('tablelize', ),
             daemon=False)
         tablelizethread.start()
 
@@ -154,9 +177,18 @@ class MyClass(QtCore.QObject):
         drawthread = threading.Thread(
             target=self.busy_thread,
             name='drawpic',
-            args=('drawpic'),
+            args=('drawpic', ),
             daemon=False)
         drawthread.start()
+
+    @QtCore.pyqtSlot()
+    def predict(self):
+        predictthread = threading.Thread(
+            target=self.busy_thread,
+            name='predict',
+            args=('predict', ),
+            daemon=False)
+        predictthread.start()
 
     def busy_thread(self, select):
         if select == 'download':
@@ -175,19 +207,61 @@ class MyClass(QtCore.QObject):
                                self.K_changedays, self.h5data_path)
             stock_tablemake(self.stocknum, self.h5datapath)
         if select == 'predict':
-            if self.model == None:
-                print('reading model......\n')
-                self.model = keras.models.load_model(
-                    self.modelpath, custom_objects={"tf": tf})
-                print('read model OK')
-            
+
+            X_list = []
+            for i in range(50):
+                pic = imageio.imread(
+                    self.pic_path + '0051pic/' +
+                    str(self.today - 1 - 49 + i).zfill(4) + '_0051.jpg',
+                    format='jpg')
+                X_list.append(pic)
+            X_pridict = np.array(X_list).reshape(len(X_list), 224, 224, 3)
+
+            with self.graph.as_default():
+                prob_array = self.model.predict(X_pridict, batch_size=10, verbose=0)
+
+            print(prob_array.shape)
+            plt.figure()
+            plt.plot(prob_array[:, 0], label='plus')
+            plt.plot(prob_array[:, 1], label='minus')
+            plt.plot(prob_array[:, 2], label='unchange')
+            plt.legend(loc='best')
+            plt.savefig(
+                self.predict_pic + self.stockid + 'predictpic/' +
+                str(self.today).zfill(4) + '.jpg',
+                mode='w')
+            self.picsig.emit(
+                str(self.predict_pic + self.stockid + 'predictpic/' +
+                    str(self.today).zfill(4) + '.jpg'))
 
         self.busysig.emit(0)
+
+    @QtCore.pyqtSlot(int)
+    def buystock(self, buynum):
+        for i in range(buynum):
+            self.mystocklist.append(self.df.iloc[self.today + 50 - 1 - 1, 6])
+            self.money -= self.df.iloc[self.today + 50 - 1 - 1, 6]
+
+    @QtCore.pyqtSlot(str, int)
+    def sellstock(self, sellvalue, sellnum):
+        for i in range(sellnum):
+            self.mystocklist.remove(sellvalue)
+            self.money += self.df.iloc[self.today + 50 - 1 - 1, 6]
+
+    @QtCore.pyqtSlot(result=str)
+    def showstocklist(self):
+        if len(self.mystocklist) == 0:
+            return str('You Don\'t have any stock')
+        self.mystocklist = self.mystocklist.sort()
+        liststr = None
+        for value in self.mystocklist:
+            liststr += str(str(value) + '\n')
+        return str(liststr)
 
 
 if __name__ == '__main__':
 
-    path = '../stockgui/main.qml'  # 加载的QML文件
+    path = 'stockgui/main.qml'
     app = QtGui.QGuiApplication([])
     view = QtQuick.QQuickView()
     stock = MyClass()
