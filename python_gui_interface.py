@@ -47,7 +47,7 @@ class MyClass(QtCore.QObject):
         '6452', '6456', '8454', '8464', '9910', '9914', '9917', '9921', '9933',
         '9938', '9941', '9945'
     }
-    lock = True
+    select = None
     today = 0
     modelpath = filepath + 'best_acc.h5'
     model = None
@@ -83,6 +83,10 @@ class MyClass(QtCore.QObject):
                 self.modelpath, custom_objects={"tf": tf})
             print('read model OK')
         self.graph = tf.get_default_graph()
+
+        processthread = threading.Thread(
+            target=self.busy_thread, name='processthread')
+        processthread.start()
 
         self.creatpath()
         if self.if_retrain == 1:
@@ -156,116 +160,87 @@ class MyClass(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def processdata(self):
-        processthread = threading.Thread(
-            target=self.busy_thread,
-            name='processdata',
-            args=('process', ),
-            daemon=False)
-        processthread.start()
+        self.select = 'process'
 
     @QtCore.pyqtSlot()
     def downloaddata(self):
-        downloadthread = threading.Thread(
-            target=self.busy_thread,
-            name='downloaddata',
-            args=('download', ),
-            daemon=False)
-        downloadthread.start()
+        self.select = 'download'
 
     @QtCore.pyqtSlot()
     def tablelize(self):
-        tablelizethread = threading.Thread(
-            target=self.busy_thread,
-            name='tablelize',
-            args=('tablelize', ),
-            daemon=False)
-        tablelizethread.start()
+        self.select = 'tablelize'
 
     @QtCore.pyqtSlot()
     def drawpic(self):
-        drawthread = threading.Thread(
-            target=self.busy_thread,
-            name='drawpic',
-            args=('drawpic', ),
-            daemon=False)
-        drawthread.start()
+        self.select = 'drawpic'
 
     @QtCore.pyqtSlot()
     def predict(self):
+        self.select = 'predict'
 
-        predictthread=threading.Thread(
-            target=self.perdictthread,
-            name='predict'
-            )
-        mainthread = threading.Thread(
-            target=self.busy_thread,
-            name='predict',
-            args=('predict', self.perdictthread),
-            )
-        predictthread.start()
+    def busy_thread(self):
+        while True:
+            if self.select == 'download':
+                self.select = None
+                stock_data_download(self.stocknum, self.from_years,
+                                    self.rawdata_path)
+                self.busysig.emit(0)
 
-    def busy_thread(self, select,thread):
-        if select == 'download':
-            stock_data_download(self.stocknum, self.from_years,
-                                self.rawdata_path)
-        if select == 'process':
-            stock_data_process(self.stocknum, 1991, self.rawdata_path,
-                               self.h5data_path)
-        if select == 'drawpic':
-            stocknum_list = list(self.stocknum)
-            pool = Pool(mp.cpu_count())
-            res = pool.map(kdraw.drawpic, stocknum_list)
-            print(res)
-        if select == 'tablelize':
-            stock_recordchange(self.stocknum, self.X_window, self.Y_slicing,
-                               self.K_changedays, self.h5data_path)
-            stock_tablemake(self.stocknum, self.h5datapath)
-        if select == 'predict':
-            thread.setDaemon(True)
-            thread.start()
-            while True:
-                if self.lock!=True:
-                    thread.join(0.1)
-                    self.lock=False
-                    break
-            print('thread end OK')
-           
-        self.busysig.emit(0)
+            if self.select == 'process':
+                self.select = None
+                stock_data_process(self.stocknum, 1991, self.rawdata_path,
+                                   self.h5data_path)
+                self.busysig.emit(0)
 
+            if self.select == 'drawpic':
+                self.select = None
+                stocknum_list = list(self.stocknum)
+                pool = Pool(mp.cpu_count())
+                res = pool.map(kdraw.drawpic, stocknum_list)
+                print(res)
+                self.busysig.emit(0)
 
-    def perdictthread(self):
-        X_list = []
-        for i in range(50):
-            pic = imageio.imread(
-                self.pic_path + '0051pic/' +
-                str(self.today - 1 - 49 + i).zfill(4) + '_0051.jpg',
-                format='jpg')
-            X_list.append(pic)
-        X_pridict = np.array(X_list).reshape(len(X_list), 224, 224, 3)
+            if self.select == 'tablelize':
+                self.select = None
+                stock_recordchange(self.stocknum, self.X_window,
+                                   self.Y_slicing, self.K_changedays,
+                                   self.h5data_path)
+                stock_tablemake(self.stocknum, self.h5datapath)
+                self.busysig.emit(0)
 
-        with self.graph.as_default():
-            prob_array = self.model.predict(
-                X_pridict, batch_size=10, verbose=0)
+            if self.select == 'predict':
+                self.select = None
+                X_list = []
+                for i in range(50):
+                    pic = imageio.imread(
+                        self.pic_path + self.stockid + 'pic/' +
+                        str(self.today - 1 - 49 + i).zfill(4) + '_' +
+                        self.stockid + '.jpg',
+                        format='jpg')
+                    X_list.append(pic)
+                X_pridict = np.array(X_list).reshape(len(X_list), 224, 224, 3)
 
-        print(prob_array.shape)
-        plt.figure()
-        plt.plot(prob_array[:, 0], label='plus')
-        plt.plot(prob_array[:, 1], label='minus')
-        plt.plot(prob_array[:, 2], label='unchange')
-        plt.legend(loc='best')
-        plt.savefig(
-            self.predict_pic + self.stockid + 'predictpic/' +
-            str(self.today).zfill(4) + '.jpg',
-            mode='w')
-        self.picsig.emit(
-            str(self.predict_pic + self.stockid + 'predictpic/' +
-                str(self.today).zfill(4) + '.jpg'))
-        print(
-            str(
-                str(self.predict_pic + self.stockid + 'predictpic/' +
-                    str(self.today).zfill(4) + '.jpg')))
-        self.lock=False
+                with self.graph.as_default():
+                    prob_array = self.model.predict(
+                        X_pridict, batch_size=10, verbose=0)
 
+                print(prob_array.shape)
+                plt.figure()
+                plt.plot(prob_array[:, 0], label='plus')
+                plt.plot(prob_array[:, 1], label='minus')
+                plt.plot(prob_array[:, 2], label='unchange')
+                plt.legend(loc='best')
+                plt.savefig(
+                    self.predict_pic + self.stockid + 'predictpic/' +
+                    str(self.today).zfill(4) + '.jpg',
+                    mode='w')
+                self.picsig.emit(
+                    str(self.predict_pic + self.stockid + 'predictpic/' +
+                        str(self.today).zfill(4) + '.jpg'))
+                print(
+                    str(self.predict_pic + self.stockid + 'predictpic/' +
+                        str(self.today).zfill(4) + '.jpg'))
+                self.busysig.emit(0)
 
     @QtCore.pyqtSlot(int)
     def buystock(self, buynum):
