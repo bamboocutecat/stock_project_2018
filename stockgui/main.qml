@@ -45,15 +45,16 @@ Rectangle {
         Text {
             id: today
             x: 22
-            y: 33
+            y: 25
             width: 292
             height: 51
             text: stock.return_today()
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
             fontSizeMode: Text.HorizontalFit
             z: 5
             style: Text.Normal
-            font.family: "Courier"
-            font.pixelSize: 34
+            font.pixelSize: 25
         }
 
         Button {
@@ -92,6 +93,8 @@ Rectangle {
                 stock.set_today(value)
                 stockpic.source =  stock.return_picaddr()
                 today.text = stock.return_today()
+                todayprice.text = stock.return_todayprice()
+                income.text = stock.return_income()
             }
 
         }
@@ -228,19 +231,20 @@ Rectangle {
                 width: 296
                 height: 325
                 visible: false
-            }
 
-            TextArea {
-                id: textArea
-                x: 0
-                y: 0
-                width: 296
-                height: 325
-                text: qsTr("Text Area\n")
-                visible: false
-                verticalAlignment: Text.AlignVCenter
-                horizontalAlignment: Text.AlignHCenter
-                font.pointSize: 18
+
+                TextArea {
+                    id: textArea
+                    x: 0
+                    y: 0
+                    width: 296
+                    height: 325
+                    text: qsTr("Text Area\n")
+                    visible: false
+                    verticalAlignment: Text.AlignVCenter
+                    horizontalAlignment: Text.AlignHCenter
+                    font.pointSize: 18
+                }
             }
         }
 
@@ -256,7 +260,8 @@ Rectangle {
             onClicked: {
                 stock.buystock(numinput.text)
                 textArea.text=stock.showstocklist()
-
+                money.text= stock.return_money()
+                income.text = stock.return_income()
             }
         }
 
@@ -272,6 +277,8 @@ Rectangle {
             onClicked: {
                 stock.sellstock(valueinput.text,numinput.text)
                 textArea.text=stock.showstocklist()
+                money.text= stock.return_money()
+                income.text = stock.return_income()
             }
         }
 
@@ -299,6 +306,44 @@ Rectangle {
             font.pixelSize: 22
         }
 
+        Text {
+            id: money
+            x: 22
+            y: 73
+            width: 292
+            height: 49
+            text: stock.return_money()
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
+            fontSizeMode: Text.HorizontalFit
+            font.pixelSize: 25
+        }
+
+        Text {
+            id: todayprice
+            x: 22
+            y: 117
+            width: 292
+            height: 40
+            text: stock.return_todayprice()
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
+            fontSizeMode: Text.HorizontalFit
+            font.pixelSize: 25
+        }
+
+        Text {
+            id: income
+            x: 22
+            y: 163
+            width: 292
+            height: 37
+            text: stock.return_income()
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
+            font.pixelSize: 25
+        }
+
 
 
 
@@ -311,6 +356,8 @@ Rectangle {
             stock.add_today()
             stockpic.source =  stock.return_picaddr()
             today.text = stock.return_today()
+            todayprice.text = stock.return_todayprice()
+            income.text = stock.return_income()
         }
     }
 
@@ -320,6 +367,8 @@ Rectangle {
             stock.minus_today()
             stockpic.source =  stock.return_picaddr()
             today.text = stock.return_today()
+            todayprice.text = stock.return_todayprice()
+            income.text = stock.return_income()
         }
     }
 

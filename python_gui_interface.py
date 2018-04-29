@@ -49,7 +49,7 @@ class MyClass(QtCore.QObject):
     }
     select = None
     today = 0
-    modelpath = filepath + 'best_acc.h5'
+    modelpath = filepath + 'my_model_0.81.h5'
     model = None
     graph = None
     max_stockidpic_num = 0
@@ -76,13 +76,6 @@ class MyClass(QtCore.QObject):
         self.df = pd.read_hdf(self.h5data_path + stockid + 'new.h5',
                               'stock_data')
         self.max_stockidpic_num = len(self.df) - 50 + 1
-
-        if self.model == None:
-            print('reading model......\n')
-            self.model = keras.models.load_model(
-                self.modelpath, custom_objects={"tf": tf})
-            print('read model OK')
-        self.graph = tf.get_default_graph()
 
         processthread = threading.Thread(
             target=self.busy_thread, name='processthread')
@@ -146,6 +139,21 @@ class MyClass(QtCore.QObject):
     def return_maxpicnum(self):
         return self.max_stockidpic_num
 
+    @QtCore.pyqtSlot(result=str)
+    def return_todayprice(self):
+        return str(self.df.iloc[self.today + 50 - 1 - 1, 6])
+
+    @QtCore.pyqtSlot(result=str)
+    def return_money(self):
+        return str(round(self.money, 3)) + ' $$'
+
+    @QtCore.pyqtSlot(result=str)
+    def return_income(self):
+        income = self.money
+        for i in range(len(self.mystocklist)):
+            income += self.df.iloc[self.today + 50 - 1 - 1, 6]
+        return str(round(income,3))
+
     @QtCore.pyqtSlot()
     def add_today(self):
         self.today += 1
@@ -179,6 +187,16 @@ class MyClass(QtCore.QObject):
         self.select = 'predict'
 
     def busy_thread(self):
+        time.sleep(3)
+        self.busysig.emit(1)
+        if self.model == None:
+            print('reading model......\n')
+            self.model = keras.models.load_model(
+                self.modelpath, custom_objects={"tf": tf})
+            print('read model OK')
+        self.graph = tf.get_default_graph()
+        self.busysig.emit(0)
+
         while True:
             if self.select == 'download':
                 self.select = None
@@ -245,24 +263,26 @@ class MyClass(QtCore.QObject):
     @QtCore.pyqtSlot(int)
     def buystock(self, buynum):
         for i in range(buynum):
-            self.mystocklist.append(self.df.iloc[self.today + 50 - 1 - 1, 6])
+            self.mystocklist.append(
+                str(self.df.iloc[self.today + 50 - 1 - 1, 6]))
             self.money -= self.df.iloc[self.today + 50 - 1 - 1, 6]
+            print(str(self.df.iloc[self.today + 50 - 1 - 1, 6]))
 
     @QtCore.pyqtSlot(str, int)
-    def sellstock(self, sellvalue, sellnum):
+    def sellstock(self, sellcount, sellnum):
         for i in range(sellnum):
-            self.mystocklist.remove(sellvalue)
+            self.mystocklist.pop(int(sellcount))
             self.money += self.df.iloc[self.today + 50 - 1 - 1, 6]
 
     @QtCore.pyqtSlot(result=str)
     def showstocklist(self):
         if len(self.mystocklist) == 0:
-            return str('You Don\'t have any stock')
-        self.mystocklist = self.mystocklist.sort()
-        liststr = None
-        for value in self.mystocklist:
-            liststr += str(str(value) + '\n')
-        return str(liststr)
+            return str('no stock')
+        self.mystocklist.sort()
+        strlist = '已購買股票列表\n'
+        for i, stock in enumerate(self.mystocklist):
+            strlist = strlist + str(i) + '  ' + str(stock) + '\n'
+        return str(strlist)
 
 
 if __name__ == '__main__':

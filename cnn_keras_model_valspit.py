@@ -104,19 +104,25 @@ def main():
             pic_addrs.append('stock_pic/' + stockid + 'pic/' +
                              str(i).zfill(4) + '_' + stockid + '.jpg')
 
-        if stockid == '0051':
+        randpickstock = randint(0, 111, size=20)
+        valflag = 0
+        for num in randpickstock:
+            if stockid == '0051':
+                break
+            if stockid == list(stocknum)[num]:
+                for item in pic_addrs:
+                    item = item.replace('\\', '/')
+                    pic_validation.append(item)
+                for table in df.values:
+                    table_validation.append(table)
+                valflag = 1
+
+        if valflag == 0:
             for item in pic_addrs:
                 item = item.replace('\\', '/')
-                pic_validation.append(item)
+                pic_train.append(item)
             for table in df.values:
-                table_validation.append(table)
-            continue
-
-        for item in pic_addrs:
-            item = item.replace('\\', '/')
-            pic_train.append(item)
-        for table in df.values:
-            table_train.append(table)
+                table_train.append(table)
 
     print('pic_train shape = ' + str(len(pic_train)))
     print('table_train shape = ' + str(len(table_train)))
@@ -143,7 +149,7 @@ def main():
             include_top=True,
             weights=None)
 
-    parallel_model = multi_gpu_model(model, gpus=6)
+    parallel_model = multi_gpu_model(model, gpus=4)
     parallel_model.compile(
         loss='categorical_crossentropy',
         optimizer='adam',
@@ -192,7 +198,7 @@ def main():
         generate_from_file(train_addrs, train_labels, batch_size),
         steps_per_epoch=len(train_addrs) // batch_size,
         #steps_per_epoch=100,
-        epochs=10,
+        epochs=1,
         verbose=1,
         validation_data=generate_from_file(
             val_addrs[0:int(len(val_addrs) * 0.7)],
@@ -212,7 +218,6 @@ def main():
         steps=len(val_addrs[int(len(val_addrs) * 0.7):]) // batch_size,
         workers=mp.cpu_count(),
         use_multiprocessing=True,
-        verbose=1,
         max_queue_size=1000)
 
     print(train_history)
@@ -233,8 +238,8 @@ def main():
 
     print('\ntest loss: ', loss)
     print('\ntest accuracy: ', accuracy)
-    
-    parallel_model.save('my_model_' + str(round(accuracy, 2)) + '.h5')
+
+    parallel_model.save('my_model_' + str(round(accuracy, 3)) + '.h5')
 
 
 main()
