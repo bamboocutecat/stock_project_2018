@@ -30,6 +30,6 @@ build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/main.o
 build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/qrc_qml.cpp
 build-stockgui-Desktop_Qt_5_10_1_GCC_64bit-Debug/stockgui
 stockgui/main.qmlc
-stockgui/red.clip
+
 python_code/mpl_finance.py
 python_code/stockgui/stockgui.pro.user
