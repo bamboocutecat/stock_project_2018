@@ -25,7 +25,7 @@ Rectangle {
             y: 82
             width: 287
             height: 284
-            visible: false
+            visible: true
             source: "qrc:/qtquickplugin/images/template_image.png"
         }
 

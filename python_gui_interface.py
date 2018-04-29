@@ -202,7 +202,7 @@ class MyClass(QtCore.QObject):
             name='predict',
             args=('predict', self.perdictthread),
             )
-        mainthread.start()
+        predictthread.start()
 
     def busy_thread(self, select,thread):
         if select == 'download':
