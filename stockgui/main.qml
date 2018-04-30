@@ -17,14 +17,14 @@ Rectangle {
         fillMode: Image.Stretch
         z: 0
         sourceSize.width: 791
-        source: "red.jpg"
+        source: "red.png"
 
         Image {
             id: predictpic
-            x: 681
-            y: 82
-            width: 287
-            height: 284
+            x: 667
+            y: 26
+            width: 340
+            height: 340
             visible: true
             source: "qrc:/qtquickplugin/images/template_image.png"
         }
@@ -44,10 +44,10 @@ Rectangle {
 
         Text {
             id: today
-            x: 22
-            y: 25
-            width: 292
-            height: 51
+            x: 177
+            y: 21
+            width: 161
+            height: 41
             text: stock.return_today()
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
@@ -250,8 +250,8 @@ Rectangle {
 
         Button {
             id: buy
-            x: 380
-            y: 505
+            x: 378
+            y: 499
             width: 100
             height: 57
             text: qsTr("Button")
@@ -267,8 +267,8 @@ Rectangle {
 
         Button {
             id: sell
-            x: 380
-            y: 582
+            x: 378
+            y: 564
             width: 100
             height: 59
             text: qsTr("Button")
@@ -284,34 +284,34 @@ Rectangle {
 
         TextInput {
             id: numinput
-            x: 522
-            y: 582
-            width: 111
-            height: 59
-            text: qsTr("Num Input")
+            x: 375
+            y: 685
+            width: 122
+            height: 48
+            text: qsTr("")
             font.family: "Tahoma"
             horizontalAlignment: Text.AlignHCenter
-            font.pixelSize: 22
+            font.pixelSize: 30
         }
 
         TextInput {
             id: valueinput
-            x: 522
-            y: 666
-            width: 111
-            height: 67
-            text: qsTr("Value Input")
+            x: 511
+            y: 685
+            width: 122
+            height: 48
+            text: qsTr("")
             horizontalAlignment: Text.AlignHCenter
             font.family: "Tahoma"
-            font.pixelSize: 22
+            font.pixelSize: 30
         }
 
         Text {
             id: money
-            x: 22
-            y: 73
-            width: 292
-            height: 49
+            x: 177
+            y: 69
+            width: 161
+            height: 41
             text: stock.return_money()
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
@@ -321,10 +321,10 @@ Rectangle {
 
         Text {
             id: todayprice
-            x: 22
-            y: 117
-            width: 292
-            height: 40
+            x: 177
+            y: 116
+            width: 161
+            height: 41
             text: stock.return_todayprice()
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
@@ -334,11 +334,12 @@ Rectangle {
 
         Text {
             id: income
-            x: 22
+            x: 177
             y: 163
-            width: 292
-            height: 37
+            width: 161
+            height: 41
             text: stock.return_income()
+            fontSizeMode: Text.HorizontalFit
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
             font.pixelSize: 25
@@ -377,6 +378,7 @@ Rectangle {
 
         onBusysig:{
             busyIndicator.running=indicator
+            slider.to=stock.return_maxpicnum()
         }
         onPicsig:{
             predictpic.source=predict_pic

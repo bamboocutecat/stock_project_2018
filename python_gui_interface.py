@@ -6,8 +6,9 @@ import numpy as np
 import os
 import threading
 from stock_data_download_process import stock_data_process, stock_data_download
-from stock_data_maketable import stock_recordchange, stock_tablemake
+from stock_data_maketable import stock_tablelize
 import multiprocessing as mp
+from multiprocessing import Process
 from multiprocessing import Pool
 import kdraw
 import sys
@@ -21,6 +22,7 @@ if sys.platform.startswith('linux'):
     from OpenGL import GL
 import tensorflow as tf
 import keras
+import subprocess
 # from keras.backend.tensorflow_backend import set_session
 # config = tf.ConfigProto()
 # config.gpu_options.per_process_gpu_memory_fraction = 0.8
@@ -49,7 +51,7 @@ class MyClass(QtCore.QObject):
     }
     select = None
     today = 0
-    modelpath = filepath + 'my_model_0.81.h5'
+    modelpath = filepath + 'best_acc.h5'
     model = None
     graph = None
     max_stockidpic_num = 0
@@ -72,10 +74,7 @@ class MyClass(QtCore.QObject):
     picsig = QtCore.pyqtSignal(str, arguments=['predict_pic'])
 
     def set_value(self, stockid):
-        self.stockid = stockid
-        self.df = pd.read_hdf(self.h5data_path + stockid + 'new.h5',
-                              'stock_data')
-        self.max_stockidpic_num = len(self.df) - 50 + 1
+        self.set_stockinfo(stockid)
 
         processthread = threading.Thread(
             target=self.busy_thread, name='processthread')
@@ -84,7 +83,12 @@ class MyClass(QtCore.QObject):
         self.creatpath()
         if self.if_retrain == 1:
             self.retrain_adjust()
-        # self.check_pic_h5data(self.stocknum, self.h5data_path, self.pic_path)
+
+    def set_stockinfo(self, stockid):
+        self.stockid = stockid
+        self.df = pd.read_hdf(self.h5data_path + stockid + 'new.h5',
+                              'stock_data')
+        self.max_stockidpic_num = len(self.df) - 50 + 1
 
     def creatpath(self):
         if not os.path.isdir(self.rawdata_path):
@@ -112,8 +116,8 @@ class MyClass(QtCore.QObject):
             piclist = glob2.glob(self.pic_path + stockid + 'pic/*.jpg')
             #     print(len(piclist))
             if (len(df) - 50 + 1) != len(piclist):
-                print('error')
-            print('%d  =  %d' % ((len(df) - 50 + 1), len(piclist)))
+                print(stockid + '   pic !=  h5data  error')
+                print('%d  =  %d' % ((len(df) - 50 + 1), len(piclist)))
 
     def retrain_adjust(self):
         trained_data_count = []
@@ -127,8 +131,8 @@ class MyClass(QtCore.QObject):
 
     @QtCore.pyqtSlot(result=str)
     def return_today(self):
-        print(str(self.df.iloc[self.today + 50 - 1 - 1, 0]))
-        return str(self.df.iloc[self.today + 50 - 1 - 1, 0])
+        print(str(self.df.iloc[self.today + 50 - 1 , 0]))
+        return str(self.df.iloc[self.today + 50 - 1 , 0])
 
     @QtCore.pyqtSlot(result=str)
     def return_picaddr(self):
@@ -137,11 +141,11 @@ class MyClass(QtCore.QObject):
 
     @QtCore.pyqtSlot(result=int)
     def return_maxpicnum(self):
-        return self.max_stockidpic_num
+        return self.max_stockidpic_num -1
 
     @QtCore.pyqtSlot(result=str)
     def return_todayprice(self):
-        return str(self.df.iloc[self.today + 50 - 1 - 1, 6])
+        return str(self.df.iloc[self.today + 50 - 1, 6])
 
     @QtCore.pyqtSlot(result=str)
     def return_money(self):
@@ -150,9 +154,13 @@ class MyClass(QtCore.QObject):
     @QtCore.pyqtSlot(result=str)
     def return_income(self):
         income = self.money
+        oriincome = self.money
         for i in range(len(self.mystocklist)):
             income += self.df.iloc[self.today + 50 - 1 - 1, 6]
-        return str(round(income,3))
+        for val in self.mystocklist:
+            oriincome += float(val)
+
+        return str(round((income / oriincome), 3) * 100) + '%'
 
     @QtCore.pyqtSlot()
     def add_today(self):
@@ -187,47 +195,78 @@ class MyClass(QtCore.QObject):
         self.select = 'predict'
 
     def busy_thread(self):
-        time.sleep(3)
-        self.busysig.emit(1)
-        if self.model == None:
-            print('reading model......\n')
-            self.model = keras.models.load_model(
-                self.modelpath, custom_objects={"tf": tf})
-            print('read model OK')
-        self.graph = tf.get_default_graph()
-        self.busysig.emit(0)
+        check_picprocess = Process(
+            target=self.check_pic_h5data,
+            args=(self.stocknum, self.h5data_path, self.pic_path))
+        check_picprocess.start()
 
         while True:
+
             if self.select == 'download':
                 self.select = None
-                stock_data_download(self.stocknum, self.from_years,
-                                    self.rawdata_path)
+                downloadprocess = Process(
+                    target=stock_data_download,
+                    args=([
+                        self.stockid,
+                    ], self.from_years, self.rawdata_path))
+                downloadprocess.start()
+                while True:
+                    if not downloadprocess.is_alive():
+                        break
                 self.busysig.emit(0)
 
             if self.select == 'process':
                 self.select = None
-                stock_data_process(self.stocknum, 1991, self.rawdata_path,
-                                   self.h5data_path)
+                self.select = None
+                processdataprocess = Process(
+                    target=stock_data_process,
+                    args=([
+                        self.stockid,
+                    ], 1991, self.rawdata_path, self.h5data_path))
+                processdataprocess.start()
+                while True:
+                    if not processdataprocess.is_alive():
+                        break
+
+                self.set_stockinfo(self.stockid)
                 self.busysig.emit(0)
 
             if self.select == 'drawpic':
                 self.select = None
-                stocknum_list = list(self.stocknum)
-                pool = Pool(mp.cpu_count())
-                res = pool.map(kdraw.drawpic, stocknum_list)
-                print(res)
+                drawpicprocess = Process(
+                    target=kdraw.drawpic, args=([
+                        self.stockid,
+                    ]))
+                drawpicprocess.start()
+                while True:
+                    if not drawpicprocess.is_alive():
+                        break
+                # stocknum_list = list(self.stocknum)
+                # pool = Pool(mp.cpu_count())
+                # res = pool.map(kdraw.drawpic, stocknum_list)
+                # print(res)
                 self.busysig.emit(0)
 
             if self.select == 'tablelize':
                 self.select = None
-                stock_recordchange(self.stocknum, self.X_window,
-                                   self.Y_slicing, self.K_changedays,
-                                   self.h5data_path)
-                stock_tablemake(self.stocknum, self.h5datapath)
+                tablelizeprocess = Process(
+                    target=stock_tablelize,
+                    args=([
+                        self.stockid,
+                    ], self.h5data_path))
+                tablelizeprocess.start()
                 self.busysig.emit(0)
 
             if self.select == 'predict':
                 self.select = None
+
+                if self.model == None:
+                    print('reading model......\n')
+                    self.model = keras.models.load_model(
+                        self.modelpath, custom_objects={"tf": tf})
+                    print('read model OK')
+                self.graph = tf.get_default_graph()
+
                 X_list = []
                 for i in range(50):
                     pic = imageio.imread(
@@ -251,7 +290,8 @@ class MyClass(QtCore.QObject):
                 plt.savefig(
                     self.predict_pic + self.stockid + 'predictpic/' +
                     str(self.today).zfill(4) + '.jpg',
-                    mode='w')
+                    mode='w',
+                    bbox_inches='tight')
                 self.picsig.emit(
                     str(self.predict_pic + self.stockid + 'predictpic/' +
                         str(self.today).zfill(4) + '.jpg'))
@@ -299,24 +339,3 @@ if __name__ == '__main__':
     view.setSource(QtCore.QUrl(path))
     view.show()
     app.exec_()
-
-# from PyQt5.QtCore import QUrl, QObject, pyqtSlot
-# from PyQt5.QtGui import QGuiApplication
-# from PyQt5.QtQuick import QQuickView
-
-# class MyClass(QObject):
-#     @pyqtSlot(int, result=str)    # 声明为槽，输入参数为int类型，返回值为str类型
-#     def returnValue(self, value):
-#         return str(value+10)
-
-# if __name__ == '__main__':
-#     path = 'test2.qml'   # 加载的QML文件
-#     app = QGuiApplication([])
-#     view = QQuickView()
-#     con = MyClass()
-#     context = view.rootContext()
-#     context.setContextProperty("con", con)
-#     view.engine().quit.connect(app.quit)
-#     view.setSource(QUrl(path))
-#     view.show()
-#     app.exec_()
