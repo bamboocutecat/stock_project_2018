@@ -44,7 +44,7 @@ def stock_data_download(stocknum, years, rawdatadir):
                         urllib.request.urlretrieve(
                             url, rawdatadir + stockid + '_' + str(year) + '_' +
                             str(m).zfill(2) + '.csv')
-                        time.sleep(2)
+                        time.sleep(2.5)
                     except urllib.error.URLError:
                         print('urllib.error.URLError')
                         continue
