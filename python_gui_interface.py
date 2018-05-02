@@ -117,7 +117,7 @@ class MyClass(QtCore.QObject):
             #     print(len(piclist))
             if (len(df) - 50 + 1) != len(piclist):
                 print(stockid + '   pic !=  h5data  error')
-                print('%d  =  %d' % ((len(df) - 50 + 1), len(piclist)))
+            print('%d  =  %d' % ((len(df) - 50 + 1), len(piclist)))
 
     def retrain_adjust(self):
         trained_data_count = []

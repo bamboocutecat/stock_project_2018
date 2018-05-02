@@ -1,3 +1,4 @@
+# coding:utf-8
 from stock_data_download_process import stock_data_process, stock_data_download
 from stock_data_maketable import stock_tablelize
 import kdraw
@@ -32,9 +33,12 @@ rawdata_path = filepath + 'raw_data/'
 h5data_path = filepath + 'h5_data/'
 pic_path = filepath + 'stock_pic/'
 
-stock_data_download(stocknum,from_years,rawdata_path)
-stock_data_process(stocknum,1991,rawdata_path,h5data_path)
-stock_tablelize(stocknum,h5data_path)
+# stock_data_download(stocknum,from_years,rawdata_path)
+# stock_data_process(stocknum,1991,rawdata_path,h5data_path)
+# stock_tablelize(stocknum,h5data_path)
+
+
+
 
 stocknum_list = list(stocknum)
 pool = Pool(mp.cpu_count())

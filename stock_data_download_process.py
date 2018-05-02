@@ -50,7 +50,8 @@ def stock_data_download(stocknum, years, rawdatadir):
                         continue
 
 
-def stock_data_process(stocknum, years, rawdatadir, h5datadir):
+def stock_data_process(stocknum, years=1991, rawdatadir='raw_data', h5datadir='h5_data'):
+
     count = np.zeros((111))
     countstock = 0
 
