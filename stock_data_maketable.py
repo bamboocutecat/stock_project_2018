@@ -19,15 +19,17 @@ import h5py
 import math
 import os
 
-def stock_tablelize(stocknum,h5datapath):
-    stock_recordchange(stocknum,h5datapath)
-    stock_tablemake(stocknum,h5datapath)
+
+def stock_tablelize(stocknum, h5datapath):
+    # stock_recordchange(stocknum, h5datapath)
+    stock_tablemake(stocknum, h5datapath)
+
 
 def stock_recordchange(stocknum,
                        h5datapath,
                        X_window=50,
                        Y_slicing=1,
-                       K_changedays=50):  # 將變化量新建h5
+                       K_changedays=30):  # 將變化量新建h5
 
     for stockid in stocknum:
         df = pd.read_hdf(h5datapath + stockid + 'new.h5', 'stock_data')
@@ -64,19 +66,35 @@ def stock_recordchange(stocknum,
 
 def stock_tablemake(stocknum, h5datapath):
     ##########################################   將分類套用並存h5   依變化量
+    df_plus_base = None
+    df_minus_base = None
+    sum_df = pd.DataFrame()
+    for stockid in stocknum:
+        df_table = pd.read_hdf(h5datapath + stockid + '_table.h5',
+                               'stock_data_table')
+        sum_df = pd.concat([sum_df, df_table], ignore_index=True)
+        df_plus_base = sum_df.iloc[:, 0].quantile(0.36)
+        df_minus_base = sum_df.iloc[:, 1].quantile(0.36)
+
     for stockid in stocknum:
         df_table = pd.read_hdf(
             h5datapath + stockid + '_table.h5', 'stock_data_table', mode='r')
+
+        # df_plus_base = df_table.iloc[:, 0].quantile(0.33)
+        # df_minus_base = df_table.iloc[:, 1].quantile(0.33)
+
         table_sumchange = np.zeros((len(df_table), 3))
 
         for i, value in enumerate(df_table.values):
-            if value[0] > 50 and value[1] <= 50:
+            if (value[0] > df_plus_base) and (value[1] < df_minus_base):
                 table_sumchange[i][0] = 1
-            if value[0] <= 50 and value[1] > 50:
+            if (value[1] > df_minus_base) and (value[0] < df_plus_base):
                 table_sumchange[i][1] = 1
-            if (value[0] < 50 and value[1] < 50) or (value[0] > 50
-                                                     and value[1] > 50):
-                table_sumchange[i][2] = 1
+
+            if (value[0] < df_plus_base and value[1] < df_minus_base) or (
+                    value[0] > df_plus_base and value[1] > df_minus_base):
+                table_sumchange[i][2] = 1 
+
         print(stockid + ' shape = ' + str(table_sumchange.shape))
         table_sumchange_df = pd.DataFrame(
             table_sumchange, columns=['plus', 'minus', 'unchange'])

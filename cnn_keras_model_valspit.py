@@ -40,7 +40,7 @@ from keras.utils import Sequence
 from keras.utils import multi_gpu_model
 from keras.preprocessing.image import img_to_array
 from numpy import float
-from multi_gpu_model_fixed import multi_gpu_model
+# from multi_gpu_model_fixed import multi_gpu_model
 
 stocknum = {
     '0051', '1102', '1216', '1227', '1314', '1319', '1434', '1451', '1476',
@@ -93,7 +93,7 @@ def main():
     table_validation = []
 
     for stockid in stocknum:
-        df = pd.read_hdf('table/' + stockid + '_table_sumchange.h5',
+        df = pd.read_hdf('h5_data/' + stockid + '_table_sumchange.h5',
                          'stock_data_table')
         pic_addrs = []
         for i in range(len(df)):
@@ -141,15 +141,15 @@ def main():
     val_addrs = list(addrs)
     val_labels = list(labels)
 
-    with tf.device('/cpu:0'):
-        model = ResNet50(
-            input_shape=(224, 224, 3),
-            classes=3,
-            pooling='max',
-            include_top=True,
-            weights=None)
+    # with tf.device('/cpu:0'):
+    parallel_model = ResNet50(
+        input_shape=(224, 224, 3),
+        classes=3,
+        pooling='max',
+        include_top=True,
+        weights=None)
 
-    parallel_model = multi_gpu_model(model, gpus=4)
+    # parallel_model = multi_gpu_model(model, gpus=4)
     parallel_model.compile(
         loss='categorical_crossentropy',
         optimizer='adam',
@@ -183,6 +183,7 @@ def main():
         verbose=1,
         save_best_only=True,
         mode='max')
+    earlystop = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=8, verbose=1, mode='auto')
 
     # train_history = parallel_model.fit(x=sum_pic['pic'][0:int(len(sum_pic['table'])*0.9)],
     #                                    y=sum_pic['table'][0:int(
@@ -196,20 +197,20 @@ def main():
 
     train_history = parallel_model.fit_generator(
         generate_from_file(train_addrs, train_labels, batch_size),
-        steps_per_epoch=len(train_addrs) // batch_size,
+        steps_per_epoch=len(train_addrs) // batch_size//5,
         #steps_per_epoch=100,
-        epochs=1,
+        epochs=50,
         verbose=1,
         validation_data=generate_from_file(
             val_addrs[0:int(len(val_addrs) * 0.7)],
             val_labels[0:int(len(val_addrs) * 0.7)], batch_size),
         validation_steps=len(val_addrs[0:int(len(val_addrs) * 0.7)]) //
-        batch_size,
+        batch_size//3,
         #validation_steps=100,
         workers=mp.cpu_count(),
         max_queue_size=1000,
         shuffle=True,
-        callbacks=[model_checkpoint],
+        callbacks=[model_checkpoint,earlystop],
         use_multiprocessing=True)
 
     loss, accuracy = parallel_model.evaluate_generator(

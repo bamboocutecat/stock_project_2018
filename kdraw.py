@@ -86,14 +86,16 @@ def drawpic(
     for X_pics in range(0, int((len(df) - X_window) / Y_slicing + 1)):
 
         try:
-            open(pic_path + stockid + 'pic/' + str(X_pics).zfill(4) + '_' +
-                 stockid + '.jpg', 'r')
-            # imageio.imread(
-            #     pic_path + stockid + 'pic/' + str(X_pics).zfill(4) + '_' +
-            #     stockid + '.jpg',
-            #     format='jpg')
+            # open(pic_path + stockid + 'pic/' + str(X_pics).zfill(4) + '_' +
+            #      stockid + '.jpg', 'r')
+            pic= imageio.imread(
+                pic_path + stockid + 'pic/' + str(X_pics).zfill(4) + '_' +
+                stockid + '.jpg',
+                format='jpg')
+            if pic.shape !=(224,224,3):
+                raise ValueError
             countpic += 1
-            print(stockid + ' = ' + str(countpic))
+            # print(stockid + ' = ' + str(countpic))
             continue
         except:
             print(stockid + 'pic/' + str(X_pics).zfill(4) + '_' + stockid +
