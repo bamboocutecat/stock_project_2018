@@ -51,7 +51,7 @@ class MyClass(QtCore.QObject):
     }
     select = None
     today = 0
-    modelpath = filepath + 'best_acc_1.h5'
+    modelpath = filepath + 'best_acc.h5'
     model = None
     graph = None
     max_stockidpic_num = 0

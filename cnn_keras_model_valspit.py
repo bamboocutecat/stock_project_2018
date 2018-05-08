@@ -162,6 +162,7 @@ def main():
     val_addrs = list(addrs)
     val_labels = list(labels)
 
+<<<<<<< HEAD
 
     
     print('reading model......\n')
@@ -188,6 +189,21 @@ def main():
     #     loss='categorical_crossentropy',
     #     optimizer='adam',
     #     metrics=['accuracy'])
+=======
+    # with tf.device('/cpu:0'):
+    parallel_model = ResNet50(
+        input_shape=(224, 224, 3),
+        classes=3,
+        pooling='max',
+        include_top=True,
+        weights=None)
+
+    # parallel_model = multi_gpu_model(model, gpus=4)
+    parallel_model.compile(
+        loss='categorical_crossentropy',
+        optimizer='adam',
+        metrics=['accuracy'])
+>>>>>>> d4d3883658e6a05a905d86e141c3e4d1a89b5f14
 
     parallel_model.summary()
     print('\n\n\n\n')
@@ -217,8 +233,12 @@ def main():
         verbose=1,
         save_best_only=True,
         mode='max')
+<<<<<<< HEAD
     model_checkpoint = EarlyStopping(
         monitor='val_acc', verbose=1, mode='max', min_delta=0.0001, patience=8)
+=======
+    earlystop = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=8, verbose=1, mode='auto')
+>>>>>>> d4d3883658e6a05a905d86e141c3e4d1a89b5f14
 
     # train_history = parallel_model.fit(x=sum_pic['pic'][0:int(len(sum_pic['table'])*0.9)],
     #                                    y=sum_pic['table'][0:int(
@@ -232,21 +252,30 @@ def main():
 
     train_history = parallel_model.fit_generator(
         generate_from_file(train_addrs, train_labels, batch_size),
+<<<<<<< HEAD
         steps_per_epoch=len(train_addrs) // batch_size // 3,
         # steps_per_epoch=1000,
+=======
+        steps_per_epoch=len(train_addrs) // batch_size//5,
+        #steps_per_epoch=100,
+>>>>>>> d4d3883658e6a05a905d86e141c3e4d1a89b5f14
         epochs=50,
         verbose=1,
         validation_data=generate_from_file(
             val_addrs[0:int(len(val_addrs) * 0.7)],
             val_labels[0:int(len(val_addrs) * 0.7)], batch_size),
         validation_steps=len(val_addrs[0:int(len(val_addrs) * 0.7)]) //
-        batch_size,
+        batch_size//3,
         #validation_steps=100,
         # workers=mp.cpu_count(),
         workers=7,
         max_queue_size=1000,
         shuffle=True,
+<<<<<<< HEAD
         callbacks=[model_checkpoint,model_checkpoint_save],
+=======
+        callbacks=[model_checkpoint,earlystop],
+>>>>>>> d4d3883658e6a05a905d86e141c3e4d1a89b5f14
         use_multiprocessing=True)
 
     loss, accuracy = parallel_model.evaluate_generator(
