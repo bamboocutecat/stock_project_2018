@@ -36,11 +36,13 @@ from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Activati
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.optimizers import Adam
 from keras.applications.resnet50 import ResNet50
+from keras.applications.inception_resnet_v2 import InceptionResNetV2
+from keras.applications.xception import Xception
 from keras.utils import Sequence
 from keras.utils import multi_gpu_model
 from keras.preprocessing.image import img_to_array
 from numpy import float
-from multi_gpu_model_fixed import multi_gpu_model
+# from multi_gpu_model_fixed import multi_gpu_model
 
 stocknum = {
     '0051', '1102', '1216', '1227', '1314', '1319', '1434', '1451', '1476',
@@ -93,7 +95,7 @@ def main():
     table_validation = []
 
     for stockid in stocknum:
-        df = pd.read_hdf('table/' + stockid + '_table_sumchange.h5',
+        df = pd.read_hdf('h5_data/' + stockid + '_table_sumchange.h5',
                          'stock_data_table')
         pic_addrs = []
         for i in range(len(df)):
@@ -104,7 +106,7 @@ def main():
             pic_addrs.append('stock_pic/' + stockid + 'pic/' +
                              str(i).zfill(4) + '_' + stockid + '.jpg')
 
-        randpickstock = randint(0, 111, size=20)
+        randpickstock = randint(0, 111, size=15)
         valflag = 0
         for num in randpickstock:
             if stockid == '0051':
@@ -124,6 +126,25 @@ def main():
             for table in df.values:
                 table_train.append(table)
 
+    # for i,labels in enumerate(table_train) :
+    #     if labels.shape !=(3,):
+    #         raise ValueError
+    #     print(i)
+    # for i,labels in enumerate(table_validation) :
+    #     if labels.shape !=(3,):
+    #         raise ValueError
+    #     print(i)
+
+    # for i,picaddr in enumerate(pic_train) :
+    #     pic = imageio.imread(picaddr,format='jpg')
+    #     if pic.shape !=(224,224,3):
+    #         raise ValueError
+    #     print(i)
+    # for i,picaddr in enumerate(pic_validation) :
+    #     pic = imageio.imread(picaddr,format='jpg')
+    #     if pic.shape !=(224,224,3):
+    #         raise ValueError
+    #     print(i)
     print('pic_train shape = ' + str(len(pic_train)))
     print('table_train shape = ' + str(len(table_train)))
     print('pic_validation shape = ' + str(len(pic_validation)))
@@ -141,19 +162,32 @@ def main():
     val_addrs = list(addrs)
     val_labels = list(labels)
 
-    with tf.device('/cpu:0'):
-        model = ResNet50(
-            input_shape=(224, 224, 3),
-            classes=3,
-            pooling='max',
-            include_top=True,
-            weights=None)
 
-    parallel_model = multi_gpu_model(model, gpus=4)
-    parallel_model.compile(
-        loss='categorical_crossentropy',
-        optimizer='adam',
-        metrics=['accuracy'])
+    
+    print('reading model......\n')
+    parallel_model = keras.models.load_model(
+        'best_acc.h5', custom_objects={"tf": tf})
+    print('read model OK')
+    # with tf.device('/cpu:0'):
+        # model = ResNet50(
+        #     input_shape=(224, 224, 3),
+        #     classes=3,
+        #     pooling='max',
+        #     include_top=True,
+        #     weights=None)
+        # model = InceptionResNetV2(
+        #     input_shape=(224, 224, 3), classes=3, include_top=True,weights=None)
+    # parallel_model = Xception(
+    #     input_shape=(224, 224, 3),
+    #     classes=3,
+    #     include_top=True,
+    #     weights=None)
+
+    # # parallel_model = multi_gpu_model(model, gpus=4)
+    # parallel_model.compile(
+    #     loss='categorical_crossentropy',
+    #     optimizer='adam',
+    #     metrics=['accuracy'])
 
     parallel_model.summary()
     print('\n\n\n\n')
@@ -177,12 +211,14 @@ def main():
 
     batch_size = 10
 
-    model_checkpoint = ModelCheckpoint(
+    model_checkpoint_save = ModelCheckpoint(
         "best_acc.h5",
         monitor='val_acc',
         verbose=1,
         save_best_only=True,
         mode='max')
+    model_checkpoint = EarlyStopping(
+        monitor='val_acc', verbose=1, mode='max', min_delta=0.0001, patience=8)
 
     # train_history = parallel_model.fit(x=sum_pic['pic'][0:int(len(sum_pic['table'])*0.9)],
     #                                    y=sum_pic['table'][0:int(
@@ -196,9 +232,9 @@ def main():
 
     train_history = parallel_model.fit_generator(
         generate_from_file(train_addrs, train_labels, batch_size),
-        steps_per_epoch=len(train_addrs) // batch_size,
-        #steps_per_epoch=100,
-        epochs=1,
+        steps_per_epoch=len(train_addrs) // batch_size // 3,
+        # steps_per_epoch=1000,
+        epochs=50,
         verbose=1,
         validation_data=generate_from_file(
             val_addrs[0:int(len(val_addrs) * 0.7)],
@@ -206,17 +242,19 @@ def main():
         validation_steps=len(val_addrs[0:int(len(val_addrs) * 0.7)]) //
         batch_size,
         #validation_steps=100,
-        workers=mp.cpu_count(),
+        # workers=mp.cpu_count(),
+        workers=7,
         max_queue_size=1000,
         shuffle=True,
-        callbacks=[model_checkpoint],
+        callbacks=[model_checkpoint,model_checkpoint_save],
         use_multiprocessing=True)
 
     loss, accuracy = parallel_model.evaluate_generator(
         generate_from_file(val_addrs[int(len(val_addrs) * 0.7):],
                            val_labels[int(len(val_addrs) * 0.7):], batch_size),
         steps=len(val_addrs[int(len(val_addrs) * 0.7):]) // batch_size,
-        workers=mp.cpu_count(),
+        # workers=mp.cpu_count(),
+        workers=7,
         use_multiprocessing=True,
         max_queue_size=1000)
 
