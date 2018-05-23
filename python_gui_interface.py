@@ -58,7 +58,8 @@ class MyClass(QtCore.QObject):
     stockid = None
     df = None
     mystocklist = []
-    money = 1000
+    myshortlist = []
+    money = 10000
     Y_slicing = 1
     X_window = 50
     K_changedays = 50
@@ -131,8 +132,8 @@ class MyClass(QtCore.QObject):
 
     @QtCore.pyqtSlot(result=str)
     def return_today(self):
-        print(str(self.df.iloc[self.today + 50 - 1 , 0]))
-        return str(self.df.iloc[self.today + 50 - 1 , 0])
+        print(str(self.df.iloc[self.today + 50 - 1, 0]))
+        return str(self.df.iloc[self.today + 50 - 1, 0])
 
     @QtCore.pyqtSlot(result=str)
     def return_picaddr(self):
@@ -141,7 +142,7 @@ class MyClass(QtCore.QObject):
 
     @QtCore.pyqtSlot(result=int)
     def return_maxpicnum(self):
-        return self.max_stockidpic_num -1
+        return self.max_stockidpic_num - 1
 
     @QtCore.pyqtSlot(result=str)
     def return_todayprice(self):
@@ -150,6 +151,16 @@ class MyClass(QtCore.QObject):
     @QtCore.pyqtSlot(result=str)
     def return_money(self):
         return str(round(self.money, 3)) + ' $$'
+
+    @QtCore.pyqtSlot(result=str)
+    def return_stockid(self):
+        return str(self.stockid)
+
+    @QtCore.pyqtSlot(str)
+    def change_stockid(self, stockid):
+        if (len(stockid) == 4):
+            self.stockid = stockid
+            self.set_stockinfo(stockid)
 
     @QtCore.pyqtSlot(result=str)
     def return_income(self):
@@ -314,14 +325,33 @@ class MyClass(QtCore.QObject):
             self.mystocklist.pop(int(sellcount))
             self.money += self.df.iloc[self.today + 50 - 1 - 1, 6]
 
+    @QtCore.pyqtSlot(int)
+    def shortstock(self, shortnum):
+        for i in range(shortnum):
+            self.myshortlist.append(
+                str(self.df.iloc[self.today + 50 - 1 - 1, 6]))
+            self.money -= self.df.iloc[self.today + 50 - 1 - 1, 6]
+            print(str(self.df.iloc[self.today + 50 - 1 - 1, 6]))
+
+    def sellshortstock(self, sellcount, sellnum):
+        for i in range(sellnum):
+            price = self.myshortlist.pop(int(sellcount))
+            self.money += price + (
+                price - self.df.iloc[self.today + 50 - 1 - 1, 6])
+
     @QtCore.pyqtSlot(result=str)
     def showstocklist(self):
-        if len(self.mystocklist) == 0:
+        if len(self.mystocklist) == 0 and len(self.myshortlist) == 0:
             return str('no stock')
         self.mystocklist.sort()
+        self.myshortlist.sort(reverse=True)
         strlist = '已購買股票列表\n'
-        for i, stock in enumerate(self.mystocklist):
-            strlist = strlist + str(i) + '  ' + str(stock) + '\n'
+
+        for i, stock, short in enumerate(
+                zip(self.mystocklist, self.myshortlist)):
+            strlist = strlist + str(i) + '  ' + str(stock) + '   ' + str(
+                short) + '\n'
+
         return str(strlist)
 
 

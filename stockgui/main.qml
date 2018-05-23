@@ -5,6 +5,7 @@ Rectangle {
     id: root
     width: 1024; height: 768
     color: "lightgray"
+    scale: 1
 
     Image {
         id: image1
@@ -343,6 +344,23 @@ Rectangle {
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
             font.pixelSize: 25
+        }
+
+        TextInput {
+            id: stockidinput
+            x: 511
+            y: 584
+            width: 122
+            height: 51
+            text: stock.return_stockid()
+            font.family: "Tahoma"
+            horizontalAlignment: Text.AlignHCenter
+            font.pixelSize: 30
+            onTextEdited: {
+                stock.change_stockid(stockidinput.text)
+                slider.to=stock.return_maxpicnum()
+            }
+
         }
 
 
