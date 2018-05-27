@@ -38,6 +38,10 @@ def stock_recordchange(stocknum,
             shape=(int((len(df) - X_window) / Y_slicing + 1 - K_changedays),
                    2))
 
+        print(recordchangedata_np_ar.shape)
+        print(df.shape)
+        print('\n')
+
         for Y in range(
                 int((len(df) - X_window) / Y_slicing + 1 - K_changedays)):
             sumchange_plus = 0
@@ -68,17 +72,14 @@ def stock_tablemake(stocknum, h5datapath):
     ##########################################   將分類套用並存h5   依變化量
     df_plus_base = None
     df_minus_base = None
-    sum_df = pd.DataFrame()
-    for stockid in stocknum:
-        df_table = pd.read_hdf(h5datapath + stockid + '_table.h5',
-                               'stock_data_table')
-        sum_df = pd.concat([sum_df, df_table], ignore_index=True)
-        df_plus_base = sum_df.iloc[:, 0].quantile(0.36)
-        df_minus_base = sum_df.iloc[:, 1].quantile(0.36)
+    
 
     for stockid in stocknum:
+        df = pd.read_hdf(h5datapath + stockid + 'new.h5', 'stock_data')
         df_table = pd.read_hdf(
             h5datapath + stockid + '_table.h5', 'stock_data_table', mode='r')
+        df_plus_base = df_table.iloc[:, 0].quantile(0.34)
+        df_minus_base = df_table.iloc[:, 1].quantile(0.34)
 
         # df_plus_base = df_table.iloc[:, 0].quantile(0.33)
         # df_minus_base = df_table.iloc[:, 1].quantile(0.33)
@@ -95,7 +96,8 @@ def stock_tablemake(stocknum, h5datapath):
                     value[0] > df_plus_base and value[1] > df_minus_base):
                 table_sumchange[i][2] = 1 
 
-        print(stockid + ' shape = ' + str(table_sumchange.shape))
+        # print(stockid + ' shape = ' + str(table_sumchange.shape))
+        # print(stockid + ' df shape = ' + str(df.shape))
         table_sumchange_df = pd.DataFrame(
             table_sumchange, columns=['plus', 'minus', 'unchange'])
         table_sumchange_df.to_hdf(
@@ -103,6 +105,7 @@ def stock_tablemake(stocknum, h5datapath):
             'stock_data_table',
             format='table',
             mode='w')
+        print(table_sumchange_df.describe())
     ########################################       求證總數無誤  將所有變化量統合
     sum_df = pd.DataFrame()
 

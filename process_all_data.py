@@ -40,11 +40,20 @@ pic_path = filepath + 'stock_pic/'
 # stock_data_process(stocknum,1991,rawdata_path,h5data_path)
 stock_tablelize(stocknum,h5data_path)
 
-# def test_pic(stockid):
-#     imageio.imread(
-#         pic_path + stockid + 'pic/' + str(X_pics).zfill(4) + '_' + stockid +
-#         '.jpg',
-#         format='jpg')
+sum_df = pd.DataFrame()
+
+for stockid in stocknum:
+    df_table = pd.read_hdf('h5_data/' + stockid + '_table_sumchange.h5',
+                            'stock_data_table')
+    sum_df = pd.concat([sum_df, df_table], ignore_index=True)
+
+print(sum_df.describe())
+
+# # def test_pic(stockid):
+# #     imageio.imread(
+# #         pic_path + stockid + 'pic/' + str(X_pics).zfill(4) + '_' + stockid +
+# #         '.jpg',
+# #         format='jpg')
 
 # stocknum_list = list(stocknum)
 # pool = Pool(mp.cpu_count())

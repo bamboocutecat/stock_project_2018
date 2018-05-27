@@ -5,7 +5,9 @@ Rectangle {
     id: root
     width: 1024; height: 768
     color: "lightgray"
+    property alias readme: readme
     scale: 1
+
 
     Image {
         id: image1
@@ -17,7 +19,7 @@ Rectangle {
         visible: true
         fillMode: Image.Stretch
         z: 0
-        sourceSize.width: 791
+        sourceSize.width: 999
         source: "red.png"
 
         Image {
@@ -29,6 +31,7 @@ Rectangle {
             visible: true
             source: "qrc:/qtquickplugin/images/template_image.png"
         }
+
 
         Image {
             id: stockpic
@@ -42,6 +45,7 @@ Rectangle {
             scale: 4
             source: stock.return_picaddr()
         }
+
 
         Text {
             id: today
@@ -58,6 +62,7 @@ Rectangle {
             font.pixelSize: 25
         }
 
+
         Button {
             id: picdown
             x: 546
@@ -70,6 +75,7 @@ Rectangle {
             highlighted: false
         }
 
+
         Button {
             id: picup
             x: 363
@@ -81,6 +87,7 @@ Rectangle {
         }
 
 
+
         Slider {
             id: slider
             x: 358
@@ -89,7 +96,7 @@ Rectangle {
             height: 63
             stepSize: 1
             to: stock.return_maxpicnum()
-            value: 0
+            value: stock.return_today()
             onValueChanged: {
                 stock.set_today(value)
                 stockpic.source =  stock.return_picaddr()
@@ -99,6 +106,7 @@ Rectangle {
             }
 
         }
+
 
         BusyIndicator {
             id: busyIndicator
@@ -199,6 +207,7 @@ Rectangle {
         }
 
 
+
         Switch {
             id: switch1
             x: 546
@@ -212,9 +221,15 @@ Rectangle {
                 scrollView.visible=switch1.checked
                 textArea.visible=switch1.checked
                 textArea.text=stock.showstocklist()
+
+                scrollView1.visible=switch1.checked
+                textArea1.visible=switch1.checked
+                textArea1.text=stock.showshortlist()
+
             }
 
         }
+
 
         Image {
             id: changetextarea
@@ -229,7 +244,7 @@ Rectangle {
                 id: scrollView
                 x: 0
                 y: 0
-                width: 296
+                width: 148
                 height: 325
                 visible: false
 
@@ -247,14 +262,36 @@ Rectangle {
                     font.pointSize: 18
                 }
             }
+
+            ScrollView {
+                id: scrollView1
+                x: 148
+                y: 0
+                width: 148
+                height: 325
+                visible: false
+                TextArea {
+                    id: textArea1
+                    x: 0
+                    y: 0
+                    width: 296
+                    height: 325
+                    text: qsTr("Text Area\n")
+                    verticalAlignment: Text.AlignVCenter
+                    font.pointSize: 18
+                    horizontalAlignment: Text.AlignHCenter
+                    visible: false
+                }
+            }
         }
+
 
         Button {
             id: buy
-            x: 378
-            y: 499
-            width: 100
-            height: 57
+            x: 363
+            y: 500
+            width: 82
+            height: 61
             text: qsTr("Button")
             opacity: 0
             visible: true
@@ -266,12 +303,13 @@ Rectangle {
             }
         }
 
+
         Button {
             id: sell
-            x: 378
-            y: 564
-            width: 100
-            height: 59
+            x: 363
+            y: 567
+            width: 82
+            height: 62
             text: qsTr("Button")
             opacity: 0
             visible: true
@@ -282,6 +320,7 @@ Rectangle {
                 income.text = stock.return_income()
             }
         }
+
 
         TextInput {
             id: numinput
@@ -295,6 +334,7 @@ Rectangle {
             font.pixelSize: 30
         }
 
+
         TextInput {
             id: valueinput
             x: 511
@@ -306,6 +346,7 @@ Rectangle {
             font.family: "Tahoma"
             font.pixelSize: 30
         }
+
 
         Text {
             id: money
@@ -320,6 +361,7 @@ Rectangle {
             font.pixelSize: 25
         }
 
+
         Text {
             id: todayprice
             x: 177
@@ -332,6 +374,7 @@ Rectangle {
             fontSizeMode: Text.HorizontalFit
             font.pixelSize: 25
         }
+
 
         Text {
             id: income
@@ -346,11 +389,12 @@ Rectangle {
             font.pixelSize: 25
         }
 
+
         TextInput {
             id: stockidinput
-            x: 511
+            x: 541
             y: 584
-            width: 122
+            width: 98
             height: 51
             text: stock.return_stockid()
             font.family: "Tahoma"
@@ -364,10 +408,60 @@ Rectangle {
         }
 
 
+        Button {
+            id: shortbuy
+            x: 452
+            y: 500
+            width: 79
+            height: 62
+            opacity: 0
+            onClicked: {
+                stock.shortstock(numinput.text)
+                textArea1.text=stock.showshortlist()
+                money.text= stock.return_money()
+                income.text = stock.return_income()
+            }
+        }
+
+
+        Button {
+            id: shortsell
+            x: 452
+            y: 568
+            width: 79
+            height: 61
+            text: qsTr("")
+            opacity: 0
+            onClicked: {
+                stock.sellshortstock(valueinput.text,numinput.text)
+                textArea1.text=stock.showshortlist()
+                money.text= stock.return_money()
+                income.text = stock.return_income()
+            }
+        }
+
+
+        MouseArea {
+            id: mouseArea
+            x: 68
+            y: 226
+            width: 198
+            height: 210
+            onEntered: {
+                readme.visible=true
+            }
+            onExited: {
+                readme.visible=false
+            }
+        }
+
+
+
 
 
 
     }
+
 
     Connections {
         target: picdown
@@ -380,6 +474,7 @@ Rectangle {
         }
     }
 
+
     Connections {
         target: picup
         onClicked: {
@@ -390,6 +485,7 @@ Rectangle {
             income.text = stock.return_income()
         }
     }
+
 
     Connections{
         target: stock
@@ -402,6 +498,19 @@ Rectangle {
             predictpic.source=predict_pic
         }
     }
+
+    Image {
+        id: readme
+        x: 253
+        y: -22
+        width: 600
+        height: 600
+        visible: false
+        sourceSize.height: 999
+        sourceSize.width: 999
+        source: "readme.png"
+    }
+
 
 
 

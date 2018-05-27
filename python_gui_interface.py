@@ -51,7 +51,7 @@ class MyClass(QtCore.QObject):
     }
     select = None
     today = 0
-    modelpath = filepath + 'best_acc.h5'
+    modelpath = filepath + 'my_model_0.417.h5'
     model = None
     graph = None
     max_stockidpic_num = 0
@@ -90,6 +90,8 @@ class MyClass(QtCore.QObject):
         self.df = pd.read_hdf(self.h5data_path + stockid + 'new.h5',
                               'stock_data')
         self.max_stockidpic_num = len(self.df) - 50 + 1
+
+        self.today=len(pd.read_hdf(self.h5data_path+stockid+'_table_sumchange.h5','stock_data_table'))
 
     def creatpath(self):
         if not os.path.isdir(self.rawdata_path):
@@ -150,7 +152,7 @@ class MyClass(QtCore.QObject):
 
     @QtCore.pyqtSlot(result=str)
     def return_money(self):
-        return str(round(self.money, 3)) + ' $$'
+        return str(round(self.money, 3)) + ' $'
 
     @QtCore.pyqtSlot(result=str)
     def return_stockid(self):
@@ -164,10 +166,16 @@ class MyClass(QtCore.QObject):
 
     @QtCore.pyqtSlot(result=str)
     def return_income(self):
-        income = self.money
-        oriincome = self.money
+        income = 0
+        oriincome = 0
         for i in range(len(self.mystocklist)):
             income += self.df.iloc[self.today + 50 - 1 - 1, 6]
+        for val in self.myshortlist:
+            income += float(val) + (
+                float(val) - self.df.iloc[self.today + 50 - 1 - 1, 6])
+
+        for val in self.myshortlist:
+            oriincome += float(val)
         for val in self.mystocklist:
             oriincome += float(val)
 
@@ -333,26 +341,39 @@ class MyClass(QtCore.QObject):
             self.money -= self.df.iloc[self.today + 50 - 1 - 1, 6]
             print(str(self.df.iloc[self.today + 50 - 1 - 1, 6]))
 
+    @QtCore.pyqtSlot(str, int)
     def sellshortstock(self, sellcount, sellnum):
         for i in range(sellnum):
-            price = self.myshortlist.pop(int(sellcount))
+            price = float(self.myshortlist.pop(int(sellcount))) 
             self.money += price + (
                 price - self.df.iloc[self.today + 50 - 1 - 1, 6])
 
     @QtCore.pyqtSlot(result=str)
     def showstocklist(self):
-        if len(self.mystocklist) == 0 and len(self.myshortlist) == 0:
+        if len(self.mystocklist) == 0:
             return str('no stock')
         self.mystocklist.sort()
-        self.myshortlist.sort(reverse=True)
-        strlist = '已購買股票列表\n'
+        strlist = '購買列表\n'
 
-        for i, stock, short in enumerate(
-                zip(self.mystocklist, self.myshortlist)):
-            strlist = strlist + str(i) + '  ' + str(stock) + '   ' + str(
-                short) + '\n'
+        for i, stock in enumerate(self.mystocklist):
+
+            strlist = strlist + str(i) + '  ' + str(stock) + '\n'
 
         return str(strlist)
+
+    @QtCore.pyqtSlot(result=str)
+    def showshortlist(self):
+        if len(self.myshortlist) == 0:
+            return str('no stock')
+        self.myshortlist.sort(reverse=True)
+        strlist = '放空列表\n'
+
+        for i, short in enumerate(self.myshortlist):
+
+            strlist = strlist + str(i) + '  ' + str(short) + '\n'
+
+        return str(strlist)
+
 
 
 if __name__ == '__main__':
